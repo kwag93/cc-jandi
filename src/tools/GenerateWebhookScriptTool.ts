@@ -1,6 +1,6 @@
 import { MCPTool } from "mcp-framework";
 import { z } from "zod";
-import { ScriptTemplate } from "../types/jandi";
+import { ScriptTemplate } from "../types/jandi.js";
 
 interface GenerateWebhookScriptInput {
   language: 'python' | 'nodejs' | 'curl' | 'bash';

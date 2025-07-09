@@ -1,7 +1,7 @@
 import { MCPTool } from "mcp-framework";
 import { z } from "zod";
-import { JandiService } from "../services/jandiService";
-import { ConfigService } from "../services/configService";
+import { JandiService } from "../services/jandiService.js";
+import { ConfigService } from "../services/configService.js";
 
 interface SendMessageInput {
   message: string;

@@ -1,6 +1,17 @@
 # 잔디 MCP 서버
 
+[![npm version](https://badge.fury.io/js/jandi-mcp.svg)](https://badge.fury.io/js/jandi-mcp)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+
 잔디(Jandi) 팀 협업 도구용 Model Context Protocol (MCP) 서버입니다. 웹훅을 통해 잔디 채널에 메시지를 보내고 자동화 스크립트를 생성할 수 있습니다.
+
+## 즉시 사용하기
+
+```bash
+npx jandi-mcp
+```
+
+> 💡 **별도 설치 없이 바로 사용 가능합니다!** Claude Desktop 설정만 하면 됩니다.
 
 ## 주요 기능
 

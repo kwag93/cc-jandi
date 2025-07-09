@@ -1,5 +1,5 @@
 import { MCPServer } from "mcp-framework";
-import { ConfigService } from "./services/configService";
+import { ConfigService } from "./services/configService.js";
 
 // Initialize configuration service
 ConfigService.initialize();
