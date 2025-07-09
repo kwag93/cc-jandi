@@ -1,0 +1,52 @@
+{
+  "name": "jandi-mcp",
+  "version": "0.1.0",
+  "description": "잔디(Jandi) 팀 협업 도구용 Model Context Protocol (MCP) 서버 - 웹훅을 통한 메시지 전송 및 자동화 스크립트 생성",
+  "type": "module",
+  "author": "kwag93",
+  "license": "MIT",
+  "homepage": "https://github.com/kwag93/jandi-mcp#readme",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/kwag93/jandi-mcp.git"
+  },
+  "bugs": {
+    "url": "https://github.com/kwag93/jandi-mcp/issues"
+  },
+  "keywords": [
+    "jandi",
+    "mcp",
+    "webhook",
+    "korean",
+    "collaboration",
+    "team",
+    "messaging",
+    "automation",
+    "claude"
+  ],
+  "bin": {
+    "jandi-mcp": "./dist/index.js"
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "scripts": {
+    "build": "tsc && mcp-build",
+    "watch": "tsc --watch",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "axios": "^1.10.0",
+    "dotenv": "^17.1.0",
+    "mcp-framework": "^0.2.2"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.24",
+    "typescript": "^5.3.3"
+  },
+  "engines": {
+    "node": ">=18.19.0"
+  }
+}
