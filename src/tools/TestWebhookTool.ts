@@ -1,8 +1,8 @@
 import { MCPTool } from "mcp-framework";
 import { z } from "zod";
-import { JandiService } from "../services/jandiService";
-import { ConfigService } from "../services/configService";
-import { JandiColors, MessageType } from "../types/jandi";
+import { JandiService } from "../services/jandiService.js";
+import { ConfigService } from "../services/configService.js";
+import { JandiColors, MessageType } from "../types/jandi.js";
 
 interface TestWebhookInput {
   token?: string;

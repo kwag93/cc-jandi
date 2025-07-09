@@ -1,5 +1,5 @@
 import * as dotenv from 'dotenv';
-import { JandiWebhookConfig } from '../types/jandi';
+import { JandiWebhookConfig } from '../types/jandi.js';
 
 dotenv.config();
 

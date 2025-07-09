@@ -1,5 +1,5 @@
 import axios, { AxiosError } from 'axios';
-import { JandiMessage, JandiWebhookConfig, JandiResponse, JandiColors, MessageType } from '../types/jandi';
+import { JandiMessage, JandiWebhookConfig, JandiResponse, JandiColors, MessageType } from '../types/jandi.js';
 
 export class JandiService {
   private static readonly DEFAULT_URL = 'https://wh.jandi.com/connect-api/webhook';
