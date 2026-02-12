@@ -1,8 +1,8 @@
 import { MCPTool } from "mcp-framework";
 import { z } from "zod";
-import { JandiService } from "../services/jandiService.js";
-import { ConfigService } from "../services/configService.js";
-import { JandiColors, MessageType } from "../types/jandi.js";
+import { IncomingWebhookService } from "../../services/IncomingWebhookService.js";
+import { resolveIncomingToken } from "../../utils/resolveToken.js";
+import { JandiColors, MessageType } from "../../types/common.js";
 
 interface TestWebhookInput {
   token?: string;
@@ -12,7 +12,7 @@ interface TestWebhookInput {
 
 class TestWebhookTool extends MCPTool<TestWebhookInput> {
   name = "test_webhook";
-  description = "Test Jandi webhook connection by sending various test messages";
+  description = "Test Jandi Incoming Webhook connection by sending various test messages";
 
   schema = {
     token: {
@@ -31,46 +31,21 @@ class TestWebhookTool extends MCPTool<TestWebhookInput> {
 
   async execute(input: TestWebhookInput) {
     try {
-      let config;
-
-      // Determine which token to use
-      if (input.token) {
-        // Validate token format
-        if (!ConfigService.validateTokenFormat(input.token)) {
-          return {
-            success: false,
-            error: "Invalid token format. Token should be a 32-character hexadecimal string"
-          };
-        }
-        config = { token: input.token };
-      } else if (input.tokenAlias) {
-        config = ConfigService.getToken(input.tokenAlias);
-        if (!config) {
-          return {
-            success: false,
-            error: `Token alias '${input.tokenAlias}' not found. Available aliases: ${ConfigService.listTokenAliases().join(', ')}`
-          };
-        }
-      } else {
-        config = ConfigService.getToken('default');
-        if (!config) {
-          return {
-            success: false,
-            error: "No default token configured. Please provide a token or tokenAlias, or set JANDI_TOKEN environment variable"
-          };
-        }
+      const resolved = resolveIncomingToken(input);
+      if (!resolved.success) {
+        return { success: false, error: resolved.error };
       }
 
+      const config = resolved.config;
       const testType = input.testType || 'basic';
       const timestamp = new Date().toISOString();
-      const results: any[] = [];
+      const results: Array<{ type: string; success: boolean; error?: string }> = [];
 
-      // Test basic message
       if (testType === 'basic' || testType === 'all') {
-        const basicMessage = JandiService.createBasicMessage(
+        const basicMessage = IncomingWebhookService.createBasicMessage(
           `🧪 Basic webhook test - ${timestamp}`
         );
-        const basicResult = await JandiService.sendMessage(config, basicMessage);
+        const basicResult = await IncomingWebhookService.sendMessage(config, basicMessage);
         results.push({
           type: 'basic',
           success: basicResult.success,
@@ -78,19 +53,16 @@ class TestWebhookTool extends MCPTool<TestWebhookInput> {
         });
       }
 
-      // Test rich message
       if (testType === 'rich' || testType === 'all') {
-        const richMessage = JandiService.createRichMessage(
+        const richMessage = IncomingWebhookService.createRichMessage(
           `🎨 Rich webhook test - ${timestamp}`,
           JandiColors.BLUE,
-          [
-            {
-              title: 'Test Section',
-              description: 'This is a test of rich message functionality with color and attachments.',
-            }
-          ]
+          [{
+            title: 'Test Section',
+            description: 'This is a test of rich message functionality with color and attachments.',
+          }]
         );
-        const richResult = await JandiService.sendMessage(config, richMessage);
+        const richResult = await IncomingWebhookService.sendMessage(config, richMessage);
         results.push({
           type: 'rich',
           success: richResult.success,
@@ -98,17 +70,16 @@ class TestWebhookTool extends MCPTool<TestWebhookInput> {
         });
       }
 
-      // Test status messages (only for 'all' test type)
       if (testType === 'all') {
         const statusTypes = [MessageType.SUCCESS, MessageType.WARNING, MessageType.ERROR];
-        
+
         for (const statusType of statusTypes) {
-          const statusMessage = JandiService.createStatusMessage(
+          const statusMessage = IncomingWebhookService.createStatusMessage(
             `${statusType.toUpperCase()} status test - ${timestamp}`,
             statusType,
             `This is a test of ${statusType} message type`
           );
-          const statusResult = await JandiService.sendMessage(config, statusMessage);
+          const statusResult = await IncomingWebhookService.sendMessage(config, statusMessage);
           results.push({
             type: `status_${statusType}`,
             success: statusResult.success,
@@ -117,14 +88,13 @@ class TestWebhookTool extends MCPTool<TestWebhookInput> {
         }
       }
 
-      // Analyze results
       const successCount = results.filter(r => r.success).length;
       const totalCount = results.length;
       const allSuccessful = successCount === totalCount;
 
       return {
         success: allSuccessful,
-        message: allSuccessful 
+        message: allSuccessful
           ? `All ${totalCount} webhook tests passed successfully`
           : `${successCount}/${totalCount} webhook tests passed`,
         tokenUsed: config.alias || 'direct',

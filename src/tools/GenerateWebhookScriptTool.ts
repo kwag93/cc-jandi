@@ -1,25 +1,31 @@
 import { MCPTool } from "mcp-framework";
 import { z } from "zod";
-import { ScriptTemplate } from "../types/jandi.js";
 
 interface GenerateWebhookScriptInput {
   language: 'python' | 'nodejs' | 'curl' | 'bash';
+  webhookType?: 'incoming' | 'team-incoming';
   token: string;
   message: string;
   color?: string;
   title?: string;
   description?: string;
   imageUrl?: string;
+  teamId?: string;
+  email?: string;
 }
 
 class GenerateWebhookScriptTool extends MCPTool<GenerateWebhookScriptInput> {
   name = "generate_webhook_script";
-  description = "Generate a script to send messages to Jandi webhook in various programming languages";
+  description = "Generate a script to send messages via Jandi webhooks. Supports both Incoming and Team Incoming webhook types in Python, Node.js, curl, and bash.";
 
   schema = {
     language: {
       type: z.enum(['python', 'nodejs', 'curl', 'bash']),
       description: "Programming language for the generated script",
+    },
+    webhookType: {
+      type: z.enum(['incoming', 'team-incoming']).optional(),
+      description: "Webhook type: 'incoming' (channel message) or 'team-incoming' (personal message). Default is 'incoming'",
     },
     token: {
       type: z.string(),
@@ -45,45 +51,65 @@ class GenerateWebhookScriptTool extends MCPTool<GenerateWebhookScriptInput> {
       type: z.string().optional(),
       description: "Image URL for the message attachment",
     },
+    teamId: {
+      type: z.string().optional(),
+      description: "Jandi team ID (required for team-incoming webhook type)",
+    },
+    email: {
+      type: z.string().optional(),
+      description: "Comma-separated recipient emails (required for team-incoming webhook type)",
+    },
   };
 
-  private generatePythonScript(input: GenerateWebhookScriptInput): string {
+  private getBaseUrl(input: GenerateWebhookScriptInput): string {
+    const type = input.webhookType || 'incoming';
+    if (type === 'team-incoming') {
+      return `https://wh.jandi.com/connect-api/team-webhook/${input.teamId}/${input.token}`;
+    }
+    return `https://wh.jandi.com/connect-api/webhook/${input.token}`;
+  }
+
+  private buildPayload(input: GenerateWebhookScriptInput): Record<string, unknown> {
     const hasAttachment = input.color || input.title || input.description || input.imageUrl;
-    
-    let script = `#!/usr/bin/env python3
+    const data: Record<string, unknown> = { body: input.message };
+
+    if (input.webhookType === 'team-incoming' && input.email) {
+      data.to = input.email;
+    }
+
+    if (hasAttachment) {
+      if (input.color) data.connectColor = input.color;
+      if (input.title || input.description || input.imageUrl) {
+        const info: Record<string, string> = {};
+        if (input.title) info.title = input.title;
+        if (input.description) info.description = input.description;
+        if (input.imageUrl) info.imageUrl = input.imageUrl;
+        data.connectInfo = [info];
+      }
+    }
+
+    return data;
+  }
+
+  private generatePythonScript(input: GenerateWebhookScriptInput): string {
+    const url = this.getBaseUrl(input);
+    const payload = this.buildPayload(input);
+    const payloadStr = JSON.stringify(payload, null, 8).replace(/^/gm, '    ').trim();
+
+    return `#!/usr/bin/env python3
 import requests
 import json
 
 def send_jandi_message():
-    url = "https://wh.jandi.com/connect-api/webhook/${input.token}"
-    
+    url = "${url}"
+
     headers = {
         "Accept": "application/vnd.tosslab.jandi-v2+json",
         "Content-Type": "application/json"
     }
-    
-    data = {
-        "body": "${input.message.replace(/"/g, '\\"')}"
-    }
-    
-`;
 
-    if (hasAttachment) {
-      script += `    # Add rich message features\n`;
-      if (input.color) {
-        script += `    data["connectColor"] = "${input.color}"\n`;
-      }
-      
-      if (input.title || input.description || input.imageUrl) {
-        script += `    data["connectInfo"] = [{\n`;
-        if (input.title) script += `        "title": "${input.title.replace(/"/g, '\\"')}",\n`;
-        if (input.description) script += `        "description": "${input.description.replace(/"/g, '\\"')}",\n`;
-        if (input.imageUrl) script += `        "imageUrl": "${input.imageUrl}",\n`;
-        script += `    }]\n`;
-      }
-    }
+    data = ${payloadStr}
 
-    script += `
     try:
         response = requests.post(url, headers=headers, data=json.dumps(data))
         if response.status_code == 200:
@@ -96,45 +122,25 @@ def send_jandi_message():
 if __name__ == "__main__":
     send_jandi_message()
 `;
-
-    return script;
   }
 
   private generateNodejsScript(input: GenerateWebhookScriptInput): string {
-    const hasAttachment = input.color || input.title || input.description || input.imageUrl;
-    
-    let script = `const axios = require('axios');
+    const url = this.getBaseUrl(input);
+    const payload = this.buildPayload(input);
+    const payloadStr = JSON.stringify(payload, null, 4);
+
+    return `const axios = require('axios');
 
 async function sendJandiMessage() {
-    const url = 'https://wh.jandi.com/connect-api/webhook/${input.token}';
-    
+    const url = '${url}';
+
     const headers = {
         'Accept': 'application/vnd.tosslab.jandi-v2+json',
         'Content-Type': 'application/json'
     };
-    
-    const data = {
-        body: '${input.message.replace(/'/g, "\\'")}'
-    };
-    
-`;
 
-    if (hasAttachment) {
-      script += `    // Add rich message features\n`;
-      if (input.color) {
-        script += `    data.connectColor = '${input.color}';\n`;
-      }
-      
-      if (input.title || input.description || input.imageUrl) {
-        script += `    data.connectInfo = [{\n`;
-        if (input.title) script += `        title: '${input.title.replace(/'/g, "\\'")}',\n`;
-        if (input.description) script += `        description: '${input.description.replace(/'/g, "\\'")}',\n`;
-        if (input.imageUrl) script += `        imageUrl: '${input.imageUrl}',\n`;
-        script += `    }];\n`;
-      }
-    }
+    const data = ${payloadStr};
 
-    script += `
     try {
         const response = await axios.post(url, data, { headers });
         console.log('Message sent successfully!');
@@ -145,29 +151,15 @@ async function sendJandiMessage() {
 
 sendJandiMessage();
 `;
-
-    return script;
   }
 
   private generateCurlScript(input: GenerateWebhookScriptInput): string {
-    const hasAttachment = input.color || input.title || input.description || input.imageUrl;
-    
-    let jsonData = `{"body":"${input.message.replace(/"/g, '\\"')}"}`;
-    
-    if (hasAttachment) {
-      const data: any = { body: input.message };
-      if (input.color) data.connectColor = input.color;
-      if (input.title || input.description || input.imageUrl) {
-        data.connectInfo = [{}];
-        if (input.title) data.connectInfo[0].title = input.title;
-        if (input.description) data.connectInfo[0].description = input.description;
-        if (input.imageUrl) data.connectInfo[0].imageUrl = input.imageUrl;
-      }
-      jsonData = JSON.stringify(data);
-    }
+    const url = this.getBaseUrl(input);
+    const payload = this.buildPayload(input);
+    const jsonData = JSON.stringify(payload);
 
     return `#!/bin/bash
-curl -X POST "https://wh.jandi.com/connect-api/webhook/${input.token}" \\
+curl -X POST "${url}" \\
   -H "Accept: application/vnd.tosslab.jandi-v2+json" \\
   -H "Content-Type: application/json" \\
   -d '${jsonData}'
@@ -175,57 +167,48 @@ curl -X POST "https://wh.jandi.com/connect-api/webhook/${input.token}" \\
   }
 
   private generateBashScript(input: GenerateWebhookScriptInput): string {
-    const hasAttachment = input.color || input.title || input.description || input.imageUrl;
-    
-    let script = `#!/bin/bash
+    const type = input.webhookType || 'incoming';
+    const payload = this.buildPayload(input);
+    const jsonData = JSON.stringify(payload).replace(/"/g, '\\"');
 
-# Jandi Webhook Script
+    let urlSetup: string;
+    if (type === 'team-incoming') {
+      urlSetup = `TEAM_ID="${input.teamId}"
 TOKEN="${input.token}"
-URL="https://wh.jandi.com/connect-api/webhook/\$TOKEN"
-MESSAGE="${input.message.replace(/"/g, '\\"')}"
-
-# Basic message data
-JSON_DATA="{\\"body\\": \\"\$MESSAGE\\""
-`;
-
-    if (hasAttachment) {
-      script += `
-# Add rich message features
-`;
-      if (input.color) {
-        script += `JSON_DATA="\$JSON_DATA, \\"connectColor\\": \\"${input.color}\\""
-`;
-      }
-      
-      if (input.title || input.description || input.imageUrl) {
-        script += `JSON_DATA="\$JSON_DATA, \\"connectInfo\\": [{"
-`;
-        if (input.title) script += `JSON_DATA="\$JSON_DATA \\"title\\": \\"${input.title.replace(/"/g, '\\"')}\\","
-`;
-        if (input.description) script += `JSON_DATA="\$JSON_DATA \\"description\\": \\"${input.description.replace(/"/g, '\\"')}\\","
-`;
-        if (input.imageUrl) script += `JSON_DATA="\$JSON_DATA \\"imageUrl\\": \\"${input.imageUrl}\\","
-`;
-        script += `JSON_DATA="\$JSON_DATA}]"
-`;
-      }
+URL="https://wh.jandi.com/connect-api/team-webhook/$TEAM_ID/$TOKEN"`;
+    } else {
+      urlSetup = `TOKEN="${input.token}"
+URL="https://wh.jandi.com/connect-api/webhook/$TOKEN"`;
     }
 
-    script += `
-JSON_DATA="\$JSON_DATA}"
+    return `#!/bin/bash
+
+# Jandi ${type === 'team-incoming' ? 'Team Incoming' : 'Incoming'} Webhook Script
+${urlSetup}
+
+JSON_DATA="${jsonData}"
 
 # Send message
-curl -X POST "\$URL" \\
+curl -X POST "$URL" \\
   -H "Accept: application/vnd.tosslab.jandi-v2+json" \\
   -H "Content-Type: application/json" \\
-  -d "\$JSON_DATA"
+  -d "$JSON_DATA"
 `;
-
-    return script;
   }
 
   async execute(input: GenerateWebhookScriptInput) {
     try {
+      const type = input.webhookType || 'incoming';
+
+      if (type === 'team-incoming') {
+        if (!input.teamId) {
+          return { success: false, error: "teamId is required for team-incoming webhook type" };
+        }
+        if (!input.email) {
+          return { success: false, error: "email is required for team-incoming webhook type" };
+        }
+      }
+
       let script: string;
       let fileExtension: string;
       let executionInstructions: string;
@@ -251,30 +234,24 @@ curl -X POST "\$URL" \\
           fileExtension = '.sh';
           executionInstructions = 'bash script.sh (requires: curl)';
           break;
-        default:
-          return {
-            success: false,
-            error: `Unsupported language: ${input.language}`
-          };
       }
 
       return {
         success: true,
         language: input.language,
+        webhookType: type,
         fileExtension,
         executionInstructions,
         script,
-        message: `Successfully generated ${input.language} script for Jandi webhook`,
+        message: `Successfully generated ${input.language} script for Jandi ${type} webhook`,
         features: {
           hasColor: !!input.color,
-          hasAttachment: !!(input.title || input.description || input.imageUrl)
+          hasAttachment: !!(input.title || input.description || input.imageUrl),
+          hasRecipients: !!input.email
         }
       };
     } catch (error) {
-      return {
-        success: false,
-        error: `Error generating script: ${error}`
-      };
+      return { success: false, error: `Error generating script: ${error}` };
     }
   }
 }

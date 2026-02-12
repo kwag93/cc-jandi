@@ -128,3 +128,6 @@ Desktop.ini
 
 # MCP specific - exclude dist for git but include for npm
 dist/
+
+# oh-my-claudecode state
+.omc/
