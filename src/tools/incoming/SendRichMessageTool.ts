@@ -1,8 +1,8 @@
 import { MCPTool } from "mcp-framework";
 import { z } from "zod";
-import { JandiService } from "../services/jandiService.js";
-import { ConfigService } from "../services/configService.js";
-import { JandiColors } from "../types/jandi.js";
+import { IncomingWebhookService } from "../../services/IncomingWebhookService.js";
+import { resolveIncomingToken } from "../../utils/resolveToken.js";
+import { JandiColors } from "../../types/common.js";
 
 interface SendRichMessageInput {
   message: string;
@@ -18,7 +18,7 @@ interface SendRichMessageInput {
 
 class SendRichMessageTool extends MCPTool<SendRichMessageInput> {
   name = "send_rich_message";
-  description = "Send a rich message with color and attachments to Jandi via webhook";
+  description = "Send a rich message with color and attachments to Jandi channel via Incoming Webhook";
 
   schema = {
     message: {
@@ -49,37 +49,11 @@ class SendRichMessageTool extends MCPTool<SendRichMessageInput> {
 
   async execute(input: SendRichMessageInput) {
     try {
-      let config;
-
-      // Determine which token to use
-      if (input.token) {
-        // Validate token format
-        if (!ConfigService.validateTokenFormat(input.token)) {
-          return {
-            success: false,
-            error: "Invalid token format. Token should be a 32-character hexadecimal string"
-          };
-        }
-        config = { token: input.token };
-      } else if (input.tokenAlias) {
-        config = ConfigService.getToken(input.tokenAlias);
-        if (!config) {
-          return {
-            success: false,
-            error: `Token alias '${input.tokenAlias}' not found. Available aliases: ${ConfigService.listTokenAliases().join(', ')}`
-          };
-        }
-      } else {
-        config = ConfigService.getToken('default');
-        if (!config) {
-          return {
-            success: false,
-            error: "No default token configured. Please provide a token or tokenAlias, or set JANDI_TOKEN environment variable"
-          };
-        }
+      const resolved = resolveIncomingToken(input);
+      if (!resolved.success) {
+        return { success: false, error: resolved.error };
       }
 
-      // Validate color format if provided
       if (input.color && !input.color.match(/^#[0-9A-F]{6}$/i)) {
         return {
           success: false,
@@ -87,37 +61,28 @@ class SendRichMessageTool extends MCPTool<SendRichMessageInput> {
         };
       }
 
-      // Create rich message
-      const message = JandiService.createRichMessage(
+      const message = IncomingWebhookService.createRichMessage(
         input.message,
         input.color,
         input.connectInfo
       );
-
-      // Send message
-      const result = await JandiService.sendMessage(config, message);
+      const result = await IncomingWebhookService.sendMessage(resolved.config, message);
 
       if (result.success) {
         return {
           success: true,
           message: "Rich message sent successfully to Jandi",
-          tokenUsed: config.alias || 'direct',
+          tokenUsed: resolved.config.alias || 'direct',
           messageDetails: {
             color: input.color || JandiColors.DEFAULT,
             attachments: input.connectInfo?.length || 0
           }
         };
       } else {
-        return {
-          success: false,
-          error: result.error
-        };
+        return { success: false, error: result.error };
       }
     } catch (error) {
-      return {
-        success: false,
-        error: `Unexpected error: ${error}`
-      };
+      return { success: false, error: `Unexpected error: ${error}` };
     }
   }
 }

@@ -1,19 +1,22 @@
 import * as dotenv from 'dotenv';
-import { JandiWebhookConfig } from '../types/jandi.js';
+import { IncomingWebhookConfig } from '../types/incoming.js';
+import { TeamIncomingWebhookConfig } from '../types/team-incoming.js';
 
 dotenv.config();
 
 export class ConfigService {
-  private static tokens: Map<string, JandiWebhookConfig> = new Map();
+  private static tokens: Map<string, IncomingWebhookConfig> = new Map();
+  private static teamTokens: Map<string, TeamIncomingWebhookConfig> = new Map();
+  private static outgoingTokens: Map<string, string> = new Map();
 
   public static initialize(): void {
-    // Load default token
+    // Load default incoming token
     const defaultToken = process.env.JANDI_TOKEN;
     if (defaultToken) {
       this.addToken('default', defaultToken);
     }
 
-    // Load named tokens (JANDI_TOKEN_DEV, JANDI_TOKEN_PROD, etc.)
+    // Load named incoming tokens (JANDI_TOKEN_DEV, JANDI_TOKEN_PROD, etc.)
     Object.keys(process.env).forEach(key => {
       if (key.startsWith('JANDI_TOKEN_') && key !== 'JANDI_TOKEN') {
         const alias = key.replace('JANDI_TOKEN_', '').toLowerCase();
@@ -24,7 +27,7 @@ export class ConfigService {
       }
     });
 
-    // Load custom URLs
+    // Load custom URLs for incoming webhooks
     Object.keys(process.env).forEach(key => {
       if (key.startsWith('JANDI_URL_')) {
         const alias = key.replace('JANDI_URL_', '').toLowerCase();
@@ -35,7 +38,44 @@ export class ConfigService {
         }
       }
     });
+
+    // Load team incoming tokens (JANDI_TEAM_ID_* + JANDI_TEAM_TOKEN_*)
+    const teamAliases = new Set<string>();
+    Object.keys(process.env).forEach(key => {
+      if (key.startsWith('JANDI_TEAM_ID_')) {
+        teamAliases.add(key.replace('JANDI_TEAM_ID_', '').toLowerCase());
+      }
+      if (key.startsWith('JANDI_TEAM_TOKEN_')) {
+        teamAliases.add(key.replace('JANDI_TEAM_TOKEN_', '').toLowerCase());
+      }
+    });
+
+    teamAliases.forEach(alias => {
+      const teamId = process.env[`JANDI_TEAM_ID_${alias.toUpperCase()}`];
+      const token = process.env[`JANDI_TEAM_TOKEN_${alias.toUpperCase()}`];
+      if (teamId && token) {
+        const config: TeamIncomingWebhookConfig = { teamId, token, alias };
+        const customUrl = process.env[`JANDI_TEAM_URL_${alias.toUpperCase()}`];
+        if (customUrl) {
+          config.url = customUrl;
+        }
+        this.teamTokens.set(alias, config);
+      }
+    });
+
+    // Load outgoing verification tokens (JANDI_OUTGOING_TOKEN_*)
+    Object.keys(process.env).forEach(key => {
+      if (key.startsWith('JANDI_OUTGOING_TOKEN_')) {
+        const alias = key.replace('JANDI_OUTGOING_TOKEN_', '').toLowerCase();
+        const token = process.env[key];
+        if (token) {
+          this.outgoingTokens.set(alias, token);
+        }
+      }
+    });
   }
+
+  // --- Incoming Token Management ---
 
   public static addToken(alias: string, token: string, url?: string): void {
     this.tokens.set(alias, {
@@ -45,11 +85,11 @@ export class ConfigService {
     });
   }
 
-  public static getToken(alias: string): JandiWebhookConfig | null {
+  public static getToken(alias: string): IncomingWebhookConfig | null {
     return this.tokens.get(alias) || null;
   }
 
-  public static getAllTokens(): Map<string, JandiWebhookConfig> {
+  public static getAllTokens(): Map<string, IncomingWebhookConfig> {
     return new Map(this.tokens);
   }
 
@@ -61,8 +101,8 @@ export class ConfigService {
     return this.tokens.delete(alias);
   }
 
-  public static getTokenByValue(tokenValue: string): JandiWebhookConfig | null {
-    for (const [alias, config] of this.tokens) {
+  public static getTokenByValue(tokenValue: string): IncomingWebhookConfig | null {
+    for (const [, config] of this.tokens) {
       if (config.token === tokenValue) {
         return config;
       }
@@ -71,12 +111,43 @@ export class ConfigService {
   }
 
   public static validateTokenFormat(token: string): boolean {
-    // 잔디 토큰은 일반적으로 32자 길이의 hexadecimal 문자열
     const tokenRegex = /^[a-f0-9]{32}$/i;
     return tokenRegex.test(token);
   }
 
   public static listTokenAliases(): string[] {
     return Array.from(this.tokens.keys());
+  }
+
+  // --- Team Incoming Token Management ---
+
+  public static getTeamToken(alias: string): TeamIncomingWebhookConfig | null {
+    return this.teamTokens.get(alias) || null;
+  }
+
+  public static hasTeamToken(alias: string): boolean {
+    return this.teamTokens.has(alias);
+  }
+
+  public static listTeamTokenAliases(): string[] {
+    return Array.from(this.teamTokens.keys());
+  }
+
+  public static getAllTeamTokens(): Map<string, TeamIncomingWebhookConfig> {
+    return new Map(this.teamTokens);
+  }
+
+  // --- Outgoing Token Management ---
+
+  public static getOutgoingToken(alias: string): string | null {
+    return this.outgoingTokens.get(alias) || null;
+  }
+
+  public static hasOutgoingToken(alias: string): boolean {
+    return this.outgoingTokens.has(alias);
+  }
+
+  public static listOutgoingTokenAliases(): string[] {
+    return Array.from(this.outgoingTokens.keys());
   }
 }
