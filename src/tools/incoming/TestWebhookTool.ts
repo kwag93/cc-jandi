@@ -94,17 +94,19 @@ class TestWebhookTool extends MCPTool<TestWebhookInput> {
 
       return {
         success: allSuccessful,
-        message: allSuccessful
-          ? `All ${totalCount} webhook tests passed successfully`
-          : `${successCount}/${totalCount} webhook tests passed`,
-        tokenUsed: config.alias || 'direct',
-        testType,
-        timestamp,
-        results,
-        summary: {
-          total: totalCount,
-          successful: successCount,
-          failed: totalCount - successCount
+        data: {
+          message: allSuccessful
+            ? `All ${totalCount} webhook tests passed successfully`
+            : `${successCount}/${totalCount} webhook tests passed`,
+          tokenUsed: config.alias || 'direct',
+          testType,
+          timestamp,
+          results,
+          summary: {
+            total: totalCount,
+            successful: successCount,
+            failed: totalCount - successCount
+          }
         }
       };
     } catch (error) {

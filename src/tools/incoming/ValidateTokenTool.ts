@@ -27,7 +27,7 @@ class ValidateTokenTool extends MCPTool<ValidateTokenInput> {
     try {
       const resolved = resolveIncomingToken(input);
       if (!resolved.success) {
-        return { success: false, error: resolved.error, tokenFormat: "invalid" };
+        return { success: false, error: resolved.error };
       }
 
       const result = await IncomingWebhookService.validateToken(
@@ -38,16 +38,20 @@ class ValidateTokenTool extends MCPTool<ValidateTokenInput> {
       if (result.success) {
         return {
           success: true,
-          message: "Token is valid and webhook is working",
-          tokenAlias: resolved.config.alias || 'direct',
-          tokenFormat: "valid"
+          data: {
+            message: "Token is valid and webhook is working",
+            tokenAlias: resolved.config.alias || 'direct',
+            tokenFormat: "valid"
+          }
         };
       } else {
         return {
           success: false,
           error: result.error,
-          tokenAlias: resolved.config.alias || 'direct',
-          tokenFormat: "valid_format_but_failed"
+          data: {
+            tokenAlias: resolved.config.alias || 'direct',
+            tokenFormat: "valid_format_but_failed"
+          }
         };
       }
     } catch (error) {

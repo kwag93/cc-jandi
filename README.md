@@ -1,10 +1,10 @@
-# 잔디 MCP 서버
+# cc-jandi
 
-[![npm version](https://badge.fury.io/js/jandi-mcp.svg)](https://badge.fury.io/js/jandi-mcp)
+[![npm version](https://badge.fury.io/js/cc-jandi.svg)](https://badge.fury.io/js/cc-jandi)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-잔디(Jandi) 웹훅을 MCP 도구로 쓸 수 있게 해주는 서버입니다.
-Claude Desktop, Cursor, VS Code 등 MCP를 지원하는 클라이언트에서 **"잔디에 메시지 보내줘"** 한마디면 동작합니다.
+잔디(Jandi) 웹훅을 위한 **MCP 서버 & Claude Code 플러그인**입니다.
+Claude Desktop, Cursor, VS Code 등 MCP 클라이언트에서 **"잔디에 메시지 보내줘"** 한마디면 동작하고, Claude Code 플러그인으로 설치하면 `/cc-jandi:notify`, `/cc-jandi:alert` 같은 Skills과 Agents까지 사용할 수 있습니다.
 
 ## 지원하는 웹훅 타입
 
@@ -43,15 +43,21 @@ Windows: `%APPDATA%\Claude\claude_desktop_config.json`
 ```json
 {
   "mcpServers": {
-    "jandi-mcp": {
+    "cc-jandi": {
       "command": "npx",
-      "args": ["jandi-mcp"],
+      "args": ["cc-jandi"],
       "env": {
         "JANDI_TOKEN": "발급받은_토큰"
       }
     }
   }
 }
+```
+
+### Claude Code 플러그인으로 설치
+
+```bash
+/plugin install cc-jandi
 ```
 
 ### 3단계: 사용
@@ -63,6 +69,30 @@ Claude Desktop을 재시작하고 대화창에 입력하세요.
 ```
 
 별도 설치 과정 없이 `npx`가 알아서 처리합니다.
+
+---
+
+## Skills
+
+Claude Code 플러그인에서 사용할 수 있는 슬래시 커맨드입니다.
+
+| 커맨드 | 설명 |
+|--------|------|
+| `/cc-jandi:notify` | 빠른 채널 알림 |
+| `/cc-jandi:alert` | 심각도별 알림 (info/success/warning/error) |
+| `/cc-jandi:deploy-notify` | 배포 결과 알림 (git 정보 자동 포함) |
+| `/cc-jandi:daily-report` | 일일 작업 리포트 |
+
+---
+
+## Agents
+
+Claude Code 플러그인에서 사용할 수 있는 에이전트입니다.
+
+| 에이전트 | 설명 |
+|----------|------|
+| `notification-composer` | 리치 메시지 작성 도우미 |
+| `webhook-debugger` | 웹훅 연결 진단 |
 
 ---
 
@@ -122,9 +152,9 @@ Claude Desktop을 재시작하고 대화창에 입력하세요.
 ```json
 {
   "mcpServers": {
-    "jandi-mcp": {
+    "cc-jandi": {
       "command": "npx",
-      "args": ["jandi-mcp"],
+      "args": ["cc-jandi"],
       "env": {
         "JANDI_TOKEN": "your_token"
       }
@@ -141,9 +171,9 @@ Claude Desktop을 재시작하고 대화창에 입력하세요.
 ```json
 {
   "mcpServers": {
-    "jandi-mcp": {
+    "cc-jandi": {
       "command": "npx",
-      "args": ["jandi-mcp"],
+      "args": ["cc-jandi"],
       "env": {
         "JANDI_TOKEN": "기본_토큰",
         "JANDI_TOKEN_DEV": "개발채널_토큰",
@@ -206,9 +236,9 @@ Claude Desktop을 재시작하고 대화창에 입력하세요.
 ```json
 {
   "mcpServers": {
-    "jandi-mcp": {
+    "cc-jandi": {
       "command": "npx",
-      "args": ["jandi-mcp"],
+      "args": ["cc-jandi"],
       "env": {
         "JANDI_TOKEN": "your_token"
       }
@@ -220,7 +250,7 @@ Claude Desktop을 재시작하고 대화창에 입력하세요.
 또는 CLI로 추가:
 
 ```bash
-claude mcp add jandi-mcp -- npx jandi-mcp
+claude mcp add cc-jandi -- npx cc-jandi
 ```
 
 </details>
@@ -233,9 +263,9 @@ claude mcp add jandi-mcp -- npx jandi-mcp
 ```json
 {
   "mcpServers": {
-    "jandi-mcp": {
+    "cc-jandi": {
       "command": "npx",
-      "args": ["jandi-mcp"],
+      "args": ["cc-jandi"],
       "env": {
         "JANDI_TOKEN": "your_token"
       }
@@ -254,9 +284,9 @@ claude mcp add jandi-mcp -- npx jandi-mcp
 ```json
 {
   "servers": {
-    "jandi-mcp": {
+    "cc-jandi": {
       "command": "npx",
-      "args": ["jandi-mcp"],
+      "args": ["cc-jandi"],
       "env": {
         "JANDI_TOKEN": "your_token"
       }
@@ -266,6 +296,67 @@ claude mcp add jandi-mcp -- npx jandi-mcp
 ```
 
 </details>
+
+---
+
+## CLI 사용법
+
+`npx`로 직접 실행하거나, AI 에이전트가 자동으로 호출할 수 있습니다.
+
+```bash
+# 환경 변수와 함께 실행
+JANDI_TOKEN=your_token npx cc-jandi
+
+# 또는 .env 파일 사용
+echo "JANDI_TOKEN=your_token" > .env
+npx cc-jandi
+```
+
+**AI 에이전트 연동** — MCP 클라이언트가 stdio로 통신합니다:
+
+```bash
+# Claude Code에서 MCP 서버로 등록
+claude mcp add cc-jandi -- npx cc-jandi
+
+# 환경 변수 포함 등록
+claude mcp add cc-jandi -e JANDI_TOKEN=your_token -- npx cc-jandi
+```
+
+**Claude Code 플러그인으로 설치** (Skills/Agents 포함):
+
+```bash
+# 마켓플레이스에서 설치
+/plugin install cc-jandi
+
+# 로컬 개발 시
+claude --plugin-dir /path/to/cc-jandi
+```
+
+---
+
+## 응답 형식
+
+모든 도구는 `ToolResult` 형태로 응답합니다:
+
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Message sent successfully to Jandi",
+    "tokenUsed": "default"
+  }
+}
+```
+
+실패 시:
+
+```json
+{
+  "success": false,
+  "error": "Invalid webhook token format or inactive/deleted webhook",
+  "errorCode": 40000
+}
+```
 
 ---
 
@@ -279,15 +370,15 @@ claude mcp add jandi-mcp -- npx jandi-mcp
 | 10분당 요청 | 500회 |
 | 팀 웹훅 수신자 | 최대 100명 |
 
-속도 제한(42900 에러)에 걸리면 서버가 자동으로 안내 메시지를 반환합니다.
+속도 제한(42900 에러)에 걸리면 서버가 자동으로 지수 백오프 재시도(최대 3회)를 수행합니다.
 
 ---
 
 ## 로컬 개발
 
 ```bash
-git clone https://github.com/kwag93/jandi-mcp.git
-cd jandi-mcp
+git clone https://github.com/kwag93/cc-jandi.git
+cd cc-jandi
 npm install
 cp .env.example .env   # 토큰 입력
 npm run build
@@ -298,9 +389,9 @@ npm run build
 ```json
 {
   "mcpServers": {
-    "jandi-mcp": {
+    "cc-jandi": {
       "command": "node",
-      "args": ["/절대/경로/jandi-mcp/dist/index.js"]
+      "args": ["/절대/경로/cc-jandi/dist/index.js"]
     }
   }
 }
@@ -325,12 +416,12 @@ npm run build
 
 **설치 없이 실행** (npx):
 ```bash
-npx jandi-mcp
+npx cc-jandi
 ```
 
 **환경 변수 설정 후 실행**:
 ```bash
-JANDI_TOKEN=your_32char_hex_token npx jandi-mcp
+JANDI_TOKEN=your_32char_hex_token npx cc-jandi
 ```
 
 서버는 stdio 전송을 사용합니다. MCP 클라이언트가 프로세스를 직접 실행하고 stdin/stdout으로 통신합니다.
@@ -449,7 +540,7 @@ email?: string           — team-incoming 시 필수
 src/
 ├── index.ts                              # 진입점 (ConfigService 초기화 → MCPServer 시작)
 ├── types/
-│   ├── common.ts                         # JandiConnectInfo, JandiColors, BaseWebhookConfig
+│   ├── common.ts                         # JandiConnectInfo, JandiColors, BaseWebhookConfig, etc.
 │   ├── incoming.ts                       # IncomingWebhookConfig, IncomingMessage
 │   ├── team-incoming.ts                  # TeamIncomingWebhookConfig, TeamIncomingMessage
 │   ├── outgoing.ts                       # OutgoingWebhookPayload, TeamOutgoingWebhookPayload
@@ -463,6 +554,7 @@ src/
 ├── utils/
 │   ├── resolveToken.ts                   # Incoming 토큰 해석 (token → alias → default)
 │   ├── resolveTeamToken.ts               # Team 토큰 해석 (teamId+token → alias)
+│   ├── validateColor.ts                  # Hex 색상 검증 (#RRGGBB)
 │   └── index.ts
 └── tools/
     ├── incoming/                          # 4개: send_message, send_rich_message, validate_token, test_webhook
@@ -480,6 +572,7 @@ import { MCPTool } from "mcp-framework";
 import { z } from "zod";
 import { IncomingWebhookService } from "../../services/IncomingWebhookService.js";
 import { resolveIncomingToken } from "../../utils/resolveToken.js";
+import type { ToolResult } from "../../types/common.js";
 
 interface MyToolInput {
   message: string;
@@ -495,12 +588,17 @@ class MyTool extends MCPTool<MyToolInput> {
     tokenAlias: { type: z.string().optional(), description: "토큰 별칭" },
   };
 
-  async execute(input: MyToolInput) {
+  async execute(input: MyToolInput): Promise<ToolResult> {
     const resolved = resolveIncomingToken(input);
     if (!resolved.success) return { success: false, error: resolved.error };
 
     const message = IncomingWebhookService.createBasicMessage(input.message);
-    return IncomingWebhookService.sendMessage(resolved.config, message);
+    const result = await IncomingWebhookService.sendMessage(resolved.config, message);
+
+    if (result.success) {
+      return { success: true, data: { message: "완료", tokenUsed: resolved.config.alias || 'direct' } };
+    }
+    return { success: false, error: result.error };
   }
 }
 
@@ -544,7 +642,7 @@ Content-Type: application/json
 
 ## 문의 및 지원
 
-- [GitHub Issues](https://github.com/kwag93/jandi-mcp/issues) — 버그 리포트 및 기능 요청
+- [GitHub Issues](https://github.com/kwag93/cc-jandi/issues) — 버그 리포트 및 기능 요청
 - [잔디 커넥트 문서](https://support.jandi.com/ko/categories/%EC%BB%A4%EB%84%A5%ED%8A%B8-fdf97953) — 잔디 웹훅 설정 가이드
 
 ## 기여하기

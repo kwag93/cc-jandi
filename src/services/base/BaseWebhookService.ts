@@ -10,6 +10,12 @@ export abstract class BaseWebhookService {
   protected static readonly MAX_MESSAGE_LENGTH = 5000;
   protected static readonly MAX_DATA_SIZE = 256 * 1024; // 256KB
   protected static readonly REQUEST_TIMEOUT = 10000; // 10 seconds
+  private static readonly MAX_RETRIES = 3;
+  private static readonly RETRY_DELAYS = [5000, 15000, 30000]; // ms — Jandi rate limit is 60 req/min
+
+  private static sleep(ms: number): Promise<void> {
+    return new Promise(resolve => setTimeout(resolve, ms));
+  }
 
   protected static validateMessageLimits(message: BaseJandiMessage): { valid: boolean; error?: string } {
     if (message.body.length > this.MAX_MESSAGE_LENGTH) {
@@ -62,35 +68,44 @@ export abstract class BaseWebhookService {
     url: string,
     message: TMessage
   ): Promise<TResponse> {
-    try {
-      const validation = this.validateMessageLimits(message);
-      if (!validation.valid) {
-        return {
-          success: false,
-          error: validation.error!
-        } as TResponse;
+    const validation = this.validateMessageLimits(message);
+    if (!validation.valid) {
+      return { success: false, error: validation.error! } as TResponse;
+    }
+
+    let lastResult: TResponse = { success: false, error: 'Max retries exceeded' } as TResponse;
+
+    for (let attempt = 0; attempt <= this.MAX_RETRIES; attempt++) {
+      if (attempt > 0) {
+        await this.sleep(this.RETRY_DELAYS[attempt - 1]);
       }
 
-      await axios.post(url, message, {
-        headers: this.HEADERS,
-        timeout: this.REQUEST_TIMEOUT
-      });
+      try {
+        await axios.post(url, message, {
+          headers: this.HEADERS,
+          timeout: this.REQUEST_TIMEOUT
+        });
 
-      return {
-        success: true,
-        message: 'Message sent successfully'
-      } as TResponse;
-    } catch (error) {
-      const axiosError = error as AxiosError;
-      const errorInfo = this.handleJandiError(axiosError);
+        return { success: true, message: 'Message sent successfully' } as TResponse;
+      } catch (error) {
+        const axiosError = error as AxiosError;
+        const errorInfo = this.handleJandiError(axiosError);
 
-      return {
-        success: false,
-        error: errorInfo.error,
-        errorCode: errorInfo.errorCode,
-        rateLimited: errorInfo.rateLimited
-      } as TResponse;
+        lastResult = {
+          success: false,
+          error: errorInfo.error,
+          errorCode: errorInfo.errorCode,
+          rateLimited: errorInfo.rateLimited
+        } as TResponse;
+
+        // Only retry on rate limit errors
+        if (!errorInfo.rateLimited) {
+          return lastResult;
+        }
+      }
     }
+
+    return lastResult;
   }
 
   protected abstract buildUrl(config: BaseWebhookConfig): string;

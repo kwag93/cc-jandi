@@ -52,17 +52,19 @@ class GenerateOutgoingHandlerTool extends MCPTool<GenerateOutgoingHandlerInput> 
 
       return {
         success: true,
-        framework: input.framework,
-        fileName,
-        executionInstructions,
-        script,
-        message: `Successfully generated ${input.framework} handler for Jandi Outgoing Webhook`,
-        notes: [
-          "The handler listens on port 3000 by default",
-          "Use simulate_outgoing_payload to generate test payloads",
-          "Response format: { body, connectColor?, connectInfo? }",
-          "Response body max 5000 chars, total response max 256KB"
-        ]
+        data: {
+          framework: input.framework,
+          fileName,
+          executionInstructions,
+          script,
+          message: `Successfully generated ${input.framework} handler for Jandi Outgoing Webhook`,
+          notes: [
+            "The handler listens on port 3000 by default",
+            "Use simulate_outgoing_payload to generate test payloads",
+            "Response format: { body, connectColor?, connectInfo? }",
+            "Response body max 5000 chars, total response max 256KB"
+          ]
+        }
       };
     } catch (error) {
       return { success: false, error: `Error generating handler: ${error}` };

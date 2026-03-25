@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Model Context Protocol (MCP) server for Jandi (Korean team collaboration tool) built with mcp-framework. It supports all 4 Jandi webhook types: **Incoming Webhook** (channel messages), **Team Incoming Webhook** (personal messages), **Outgoing Webhook**, and **Team Outgoing Webhook**. The server automatically discovers and loads tools recursively from the `src/tools/` directory.
+This is a Model Context Protocol (MCP) server and Claude Code plugin for Jandi (Korean team collaboration tool) built with mcp-framework. It supports all 4 Jandi webhook types: **Incoming Webhook** (channel messages), **Team Incoming Webhook** (personal messages), **Outgoing Webhook**, and **Team Outgoing Webhook**. The server automatically discovers and loads tools recursively from the `src/tools/` directory. As a Claude Code plugin, it provides skills, agents, and hooks for streamlined Jandi integration.
 
 ## Common Commands
 
@@ -36,7 +36,7 @@ cp .env.example .env
 ```bash
 # Test locally using npm link
 npm link
-jandi-mcp
+cc-jandi
 
 # Test with Claude Desktop by updating claude_desktop_config.json
 ```
@@ -45,10 +45,15 @@ jandi-mcp
 
 ### Directory Structure
 ```
+.claude-plugin/plugin.json    # 플러그인 매니페스트
+skills/                       # Skills (notify, alert, deploy-notify, daily-report)
+agents/                       # Agents (notification-composer, webhook-debugger)
+hooks/hooks.json             # Hooks 설정
+.mcp.json                    # MCP 서버 번들링
 src/
   index.ts                          # Server entry point
   types/
-    common.ts                       # Shared types: JandiConnectInfo, JandiColors, BaseWebhookConfig, etc.
+    common.ts                       # Shared types: JandiConnectInfo, JandiColors, BaseWebhookConfig, ToolResult<T>
     incoming.ts                     # IncomingWebhookConfig, IncomingMessage, IncomingResponse
     team-incoming.ts                # TeamIncomingWebhookConfig, TeamIncomingMessage, TeamIncomingResponse
     outgoing.ts                     # OutgoingWebhookPayload, TeamOutgoingWebhookPayload, OutgoingWebhookResponse
@@ -56,7 +61,7 @@ src/
     jandi.ts                        # Backward compatibility facade (deprecated, use index.ts)
   services/
     base/
-      BaseWebhookService.ts         # Abstract base: validation, error handling, HTTP
+      BaseWebhookService.ts         # Abstract base: validation, error handling, HTTP, rate limit retry
     IncomingWebhookService.ts        # Incoming Webhook service
     TeamIncomingWebhookService.ts    # Team Incoming Webhook service
     configService.ts                 # Multi-type token management
@@ -64,6 +69,7 @@ src/
   utils/
     resolveToken.ts                  # Incoming token resolution (deduplicates tool logic)
     resolveTeamToken.ts              # Team token resolution
+    validateHexColor.ts              # Hex color validation utility
     index.ts                         # Utility re-exports
   tools/
     incoming/
@@ -82,6 +88,18 @@ src/
     GenerateWebhookScriptTool.ts     # generate_webhook_script - Multi-type script generation
 ```
 
+### Key Types
+
+#### ToolResult<T>
+Standard response interface for all tool executions:
+```typescript
+interface ToolResult<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: string;
+}
+```
+
 ### Key Services
 
 #### BaseWebhookService (Abstract)
@@ -89,6 +107,7 @@ Common webhook logic shared by all services:
 - HTTP headers, request timeout
 - Message validation (5000 chars, 256KB limits)
 - Jandi-specific error handling (40000, 42900)
+- Rate limit retry with exponential backoff (max 3 attempts)
 - Generic `sendRequest()` method
 
 #### IncomingWebhookService
@@ -108,6 +127,11 @@ Manages webhook tokens across all types:
 - **Incoming**: `JANDI_TOKEN`, `JANDI_TOKEN_{alias}`, `JANDI_URL_{alias}`
 - **Team Incoming**: `JANDI_TEAM_ID_{alias}` + `JANDI_TEAM_TOKEN_{alias}`, `JANDI_TEAM_URL_{alias}`
 - **Outgoing**: `JANDI_OUTGOING_TOKEN_{alias}`
+
+### Key Utilities
+
+#### validateHexColor(color: string): boolean
+Validates hex color strings (e.g., `#FF0000`, `#abc`). Used by rich message tools to validate `connectColor` before sending.
 
 ### Available Tools (11)
 
@@ -152,7 +176,7 @@ All tools follow the same pattern:
 4. Define `schema` using Zod for input validation
 5. Use `resolveIncomingToken()` or `resolveTeamToken()` for token management
 6. Use the appropriate webhook service for message sending
-7. Implement `execute(input)` method with business logic
+7. Implement `execute(input)` method returning `ToolResult`
 
 Example tool structure:
 ```typescript
@@ -160,6 +184,7 @@ import { MCPTool } from "mcp-framework";
 import { z } from "zod";
 import { IncomingWebhookService } from "../../services/IncomingWebhookService.js";
 import { resolveIncomingToken } from "../../utils/resolveToken.js";
+import type { ToolResult } from "../../types/common.js";
 
 interface MyToolInput {
   message: string;
@@ -175,7 +200,7 @@ class MyTool extends MCPTool<MyToolInput> {
     tokenAlias: { type: z.string().optional(), description: "Token alias" },
   };
 
-  async execute(input: MyToolInput) {
+  async execute(input: MyToolInput): Promise<ToolResult> {
     const resolved = resolveIncomingToken(input);
     if (!resolved.success) return { success: false, error: resolved.error };
 
@@ -208,7 +233,7 @@ JANDI_OUTGOING_TOKEN_DEPLOY=verification_token
 
 The server handles Jandi-specific errors via `BaseWebhookService`:
 - **40000**: Invalid webhook token or inactive webhook
-- **42900**: Rate limit exceeded (60 req/min, 500 req/10min)
+- **42900**: Rate limit exceeded (60 req/min, 500 req/10min) — automatic retry with exponential backoff (max 3 attempts)
 - **Message validation**: 5000 characters max, 256KB data size max
 
 ## Jandi Webhook Formats
@@ -250,9 +275,9 @@ Add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "jandi-mcp": {
+    "cc-jandi": {
       "command": "node",
-      "args": ["/absolute/path/to/jandi-mcp/dist/index.js"]
+      "args": ["/absolute/path/to/cc-jandi/dist/index.js"]
     }
   }
 }
@@ -262,9 +287,9 @@ Add to `claude_desktop_config.json`:
 ```json
 {
   "mcpServers": {
-    "jandi-mcp": {
+    "cc-jandi": {
       "command": "npx",
-      "args": ["jandi-mcp"]
+      "args": ["cc-jandi"]
     }
   }
 }
