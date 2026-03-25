@@ -8,6 +8,7 @@ export {
   JandiColors,
   MessageType,
   ScriptTemplate,
+  ToolResult,
 } from './common.js';
 
 // Incoming webhook types

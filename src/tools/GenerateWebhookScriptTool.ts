@@ -238,16 +238,18 @@ curl -X POST "$URL" \\
 
       return {
         success: true,
-        language: input.language,
-        webhookType: type,
-        fileExtension,
-        executionInstructions,
-        script,
-        message: `Successfully generated ${input.language} script for Jandi ${type} webhook`,
-        features: {
-          hasColor: !!input.color,
-          hasAttachment: !!(input.title || input.description || input.imageUrl),
-          hasRecipients: !!input.email
+        data: {
+          language: input.language,
+          webhookType: type,
+          fileExtension,
+          executionInstructions,
+          script,
+          message: `Successfully generated ${input.language} script for Jandi ${type} webhook`,
+          features: {
+            hasColor: !!input.color,
+            hasAttachment: !!(input.title || input.description || input.imageUrl),
+            hasRecipients: !!input.email
+          }
         }
       };
     } catch (error) {

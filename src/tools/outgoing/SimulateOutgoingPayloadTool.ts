@@ -72,11 +72,13 @@ class SimulateOutgoingPayloadTool extends MCPTool<SimulateOutgoingPayloadInput> 
 
         return {
           success: true,
-          webhookType: 'team-outgoing',
-          payload,
-          payloadJson: JSON.stringify(payload, null, 2),
-          curlCommand: this.generateCurlCommand(payload),
-          message: "Team Outgoing Webhook test payload generated. Use curlCommand to test your handler."
+          data: {
+            webhookType: 'team-outgoing',
+            payload,
+            payloadJson: JSON.stringify(payload, null, 2),
+            curlCommand: this.generateCurlCommand(payload),
+            message: "Team Outgoing Webhook test payload generated. Use curlCommand to test your handler."
+          }
         };
       }
 
@@ -96,11 +98,13 @@ class SimulateOutgoingPayloadTool extends MCPTool<SimulateOutgoingPayloadInput> 
 
       return {
         success: true,
-        webhookType: 'outgoing',
-        payload,
-        payloadJson: JSON.stringify(payload, null, 2),
-        curlCommand: this.generateCurlCommand(payload),
-        message: "Outgoing Webhook test payload generated. Use curlCommand to test your handler."
+        data: {
+          webhookType: 'outgoing',
+          payload,
+          payloadJson: JSON.stringify(payload, null, 2),
+          curlCommand: this.generateCurlCommand(payload),
+          message: "Outgoing Webhook test payload generated. Use curlCommand to test your handler."
+        }
       };
     } catch (error) {
       return { success: false, error: `Error generating payload: ${error}` };

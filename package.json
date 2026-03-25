@@ -1,17 +1,17 @@
 {
-  "name": "jandi-mcp",
-  "version": "0.2.0",
-  "description": "잔디(Jandi) 팀 협업 도구용 Model Context Protocol (MCP) 서버 - 웹훅을 통한 메시지 전송 및 자동화 스크립트 생성",
+  "name": "cc-jandi",
+  "version": "1.0.1",
+  "description": "잔디(Jandi) 팀 협업 도구용 MCP 서버 & Claude Code 플러그인 - 웹훅 메시지 전송, 알림 자동화, 스크립트 생성",
   "type": "module",
   "author": "kwag93",
   "license": "MIT",
-  "homepage": "https://github.com/kwag93/jandi-mcp#readme",
+  "homepage": "https://github.com/kwag93/cc-jandi#readme",
   "repository": {
     "type": "git",
-    "url": "https://github.com/kwag93/jandi-mcp.git"
+    "url": "git+https://github.com/kwag93/cc-jandi.git"
   },
   "bugs": {
-    "url": "https://github.com/kwag93/jandi-mcp/issues"
+    "url": "https://github.com/kwag93/cc-jandi/issues"
   },
   "keywords": [
     "jandi",
@@ -22,10 +22,12 @@
     "team",
     "messaging",
     "automation",
-    "claude"
+    "claude",
+    "plugin",
+    "claude-code"
   ],
   "bin": {
-    "jandi-mcp": "./dist/index.js"
+    "cc-jandi": "dist/index.js"
   },
   "files": [
     "dist",

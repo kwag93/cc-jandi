@@ -41,8 +41,10 @@ class SendMessageTool extends MCPTool<SendMessageInput> {
       if (result.success) {
         return {
           success: true,
-          message: "Message sent successfully to Jandi",
-          tokenUsed: resolved.config.alias || 'direct'
+          data: {
+            message: "Message sent successfully to Jandi",
+            tokenUsed: resolved.config.alias || 'direct'
+          }
         };
       } else {
         return { success: false, error: result.error };

@@ -5,10 +5,24 @@
 이 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 기반으로 하며, 
 [Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
-## [Unreleased]
+## [1.0.0] - 2026-03-25
+
+### Changed
+- 프로젝트명 변경: jandi-mcp → cc-jandi
+- Claude Code 플러그인 구조 추가
+- 모든 도구 반환값을 ToolResult 형태로 통일
+- 색상 검증 로직을 공용 유틸로 추출
 
 ### Added
-- 초기 릴리즈 준비
+- Skills: notify, alert, deploy-notify, daily-report
+- Agents: notification-composer, webhook-debugger
+- Rate limit 에러 시 지수 백오프 재시도 (최대 3회)
+- ToolResult<T> 표준 응답 인터페이스
+- validateHexColor() 공용 유틸리티
+- Claude Code 플러그인 매니페스트 (.claude-plugin/plugin.json)
+- MCP 서버 번들링 (.mcp.json)
+
+## [Unreleased]
 
 ## [0.1.0] - 2025-01-09
 

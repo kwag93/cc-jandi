@@ -51,9 +51,11 @@ class SendTeamMessageTool extends MCPTool<SendTeamMessageInput> {
       if (result.success) {
         return {
           success: true,
-          message: "Team message sent successfully",
-          tokenUsed: resolved.config.alias || 'direct',
-          recipients: input.email
+          data: {
+            message: "Team message sent successfully",
+            tokenUsed: resolved.config.alias || 'direct',
+            recipients: input.email
+          }
         };
       } else {
         return { success: false, error: result.error };

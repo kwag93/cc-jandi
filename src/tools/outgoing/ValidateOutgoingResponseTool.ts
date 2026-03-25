@@ -1,5 +1,6 @@
 import { MCPTool } from "mcp-framework";
 import { z } from "zod";
+import { validateHexColor } from "../../utils/validateColor.js";
 
 interface ValidateOutgoingResponseInput {
   body: string;
@@ -49,8 +50,9 @@ class ValidateOutgoingResponseTool extends MCPTool<ValidateOutgoingResponseInput
 
     // Validate color format
     if (input.connectColor) {
-      if (!input.connectColor.match(/^#[0-9A-F]{6}$/i)) {
-        issues.push("connectColor must be a valid hex color code (e.g., '#FF0000')");
+      const colorResult = validateHexColor(input.connectColor);
+      if (!colorResult.valid) {
+        issues.push(`connectColor: ${colorResult.error!}`);
       }
     }
 
@@ -85,23 +87,25 @@ class ValidateOutgoingResponseTool extends MCPTool<ValidateOutgoingResponseInput
 
     return {
       success: true,
-      valid: isValid,
-      message: isValid
-        ? "Outgoing webhook response format is valid"
-        : "Outgoing webhook response has validation issues",
-      issues: issues.length > 0 ? issues : undefined,
-      warnings: warnings.length > 0 ? warnings : undefined,
-      stats: {
-        bodyLength: input.body?.length || 0,
-        maxBodyLength: MAX_BODY_LENGTH,
-        totalDataSize: dataSize,
-        maxDataSize: MAX_DATA_SIZE,
-        connectInfoSections: input.connectInfo?.length || 0
-      },
-      validResponseFormat: {
-        body: "string (required, max 5000 chars)",
-        connectColor: "string (optional, hex color e.g. '#FAC11B')",
-        connectInfo: "array (optional, [{title?, description?, imageUrl?}])"
+      data: {
+        valid: isValid,
+        message: isValid
+          ? "Outgoing webhook response format is valid"
+          : "Outgoing webhook response has validation issues",
+        issues: issues.length > 0 ? issues : undefined,
+        warnings: warnings.length > 0 ? warnings : undefined,
+        stats: {
+          bodyLength: input.body?.length || 0,
+          maxBodyLength: MAX_BODY_LENGTH,
+          totalDataSize: dataSize,
+          maxDataSize: MAX_DATA_SIZE,
+          connectInfoSections: input.connectInfo?.length || 0
+        },
+        validResponseFormat: {
+          body: "string (required, max 5000 chars)",
+          connectColor: "string (optional, hex color e.g. '#FAC11B')",
+          connectInfo: "array (optional, [{title?, description?, imageUrl?}])"
+        }
       }
     };
   }

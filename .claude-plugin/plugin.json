@@ -1,0 +1,12 @@
+{
+  "name": "cc-jandi",
+  "description": "잔디(Jandi) 웹훅 메시지 전송, 알림 자동화를 위한 Claude Code 플러그인",
+  "version": "1.0.0",
+  "author": {
+    "name": "kwag93"
+  },
+  "homepage": "https://github.com/kwag93/cc-jandi",
+  "repository": "https://github.com/kwag93/cc-jandi",
+  "license": "MIT",
+  "keywords": ["jandi", "webhook", "notification", "korean", "collaboration"]
+}
