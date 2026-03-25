@@ -2,6 +2,7 @@ import { MCPTool } from "mcp-framework";
 import { z } from "zod";
 import { TeamIncomingWebhookService } from "../../services/TeamIncomingWebhookService.js";
 import { resolveTeamToken } from "../../utils/resolveTeamToken.js";
+import { validateHexColor } from "../../utils/validateColor.js";
 import { JandiColors } from "../../types/common.js";
 
 interface SendTeamRichMessageInput {
@@ -64,11 +65,11 @@ class SendTeamRichMessageTool extends MCPTool<SendTeamRichMessageInput> {
         return { success: false, error: resolved.error };
       }
 
-      if (input.color && !input.color.match(/^#[0-9A-F]{6}$/i)) {
-        return {
-          success: false,
-          error: "Invalid color format. Color should be a hex color code (e.g., '#FF0000')"
-        };
+      if (input.color) {
+        const colorResult = validateHexColor(input.color);
+        if (!colorResult.valid) {
+          return { success: false, error: colorResult.error };
+        }
       }
 
       const message = TeamIncomingWebhookService.createRichMessage(

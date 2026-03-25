@@ -1,5 +1,6 @@
 import { MCPTool } from "mcp-framework";
 import { z } from "zod";
+import { validateHexColor } from "../../utils/validateColor.js";
 
 interface ValidateOutgoingResponseInput {
   body: string;
@@ -49,8 +50,9 @@ class ValidateOutgoingResponseTool extends MCPTool<ValidateOutgoingResponseInput
 
     // Validate color format
     if (input.connectColor) {
-      if (!input.connectColor.match(/^#[0-9A-F]{6}$/i)) {
-        issues.push("connectColor must be a valid hex color code (e.g., '#FF0000')");
+      const colorResult = validateHexColor(input.connectColor);
+      if (!colorResult.valid) {
+        issues.push(`connectColor: ${colorResult.error!}`);
       }
     }
 

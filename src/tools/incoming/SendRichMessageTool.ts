@@ -2,6 +2,7 @@ import { MCPTool } from "mcp-framework";
 import { z } from "zod";
 import { IncomingWebhookService } from "../../services/IncomingWebhookService.js";
 import { resolveIncomingToken } from "../../utils/resolveToken.js";
+import { validateHexColor } from "../../utils/validateColor.js";
 import { JandiColors } from "../../types/common.js";
 
 interface SendRichMessageInput {
@@ -54,11 +55,11 @@ class SendRichMessageTool extends MCPTool<SendRichMessageInput> {
         return { success: false, error: resolved.error };
       }
 
-      if (input.color && !input.color.match(/^#[0-9A-F]{6}$/i)) {
-        return {
-          success: false,
-          error: "Invalid color format. Color should be a hex color code (e.g., '#FF0000')"
-        };
+      if (input.color) {
+        const colorResult = validateHexColor(input.color);
+        if (!colorResult.valid) {
+          return { success: false, error: colorResult.error };
+        }
       }
 
       const message = IncomingWebhookService.createRichMessage(
