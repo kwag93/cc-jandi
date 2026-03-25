@@ -1,10 +1,10 @@
-# 잔디 MCP 서버
+# cc-jandi
 
 [![npm version](https://badge.fury.io/js/cc-jandi.svg)](https://badge.fury.io/js/cc-jandi)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-잔디(Jandi) 웹훅을 MCP 도구로 쓸 수 있게 해주는 서버입니다.
-Claude Desktop, Cursor, VS Code 등 MCP를 지원하는 클라이언트에서 **"잔디에 메시지 보내줘"** 한마디면 동작합니다.
+잔디(Jandi) 웹훅을 위한 **MCP 서버 & Claude Code 플러그인**입니다.
+Claude Desktop, Cursor, VS Code 등 MCP 클라이언트에서 **"잔디에 메시지 보내줘"** 한마디면 동작하고, Claude Code 플러그인으로 설치하면 `/cc-jandi:notify`, `/cc-jandi:alert` 같은 Skills과 Agents까지 사용할 수 있습니다.
 
 ## 지원하는 웹훅 타입
 
@@ -299,6 +299,67 @@ claude mcp add cc-jandi -- npx cc-jandi
 
 ---
 
+## CLI 사용법
+
+`npx`로 직접 실행하거나, AI 에이전트가 자동으로 호출할 수 있습니다.
+
+```bash
+# 환경 변수와 함께 실행
+JANDI_TOKEN=your_token npx cc-jandi
+
+# 또는 .env 파일 사용
+echo "JANDI_TOKEN=your_token" > .env
+npx cc-jandi
+```
+
+**AI 에이전트 연동** — MCP 클라이언트가 stdio로 통신합니다:
+
+```bash
+# Claude Code에서 MCP 서버로 등록
+claude mcp add cc-jandi -- npx cc-jandi
+
+# 환경 변수 포함 등록
+claude mcp add cc-jandi -e JANDI_TOKEN=your_token -- npx cc-jandi
+```
+
+**Claude Code 플러그인으로 설치** (Skills/Agents 포함):
+
+```bash
+# 마켓플레이스에서 설치
+/plugin install cc-jandi
+
+# 로컬 개발 시
+claude --plugin-dir /path/to/cc-jandi
+```
+
+---
+
+## 응답 형식
+
+모든 도구는 `ToolResult` 형태로 응답합니다:
+
+```json
+{
+  "success": true,
+  "data": {
+    "message": "Message sent successfully to Jandi",
+    "tokenUsed": "default"
+  }
+}
+```
+
+실패 시:
+
+```json
+{
+  "success": false,
+  "error": "Invalid webhook token format or inactive/deleted webhook",
+  "errorCode": 40000
+}
+```
+
+---
+
 ## 제한사항
 
 | 항목 | 제한 |
@@ -493,6 +554,7 @@ src/
 ├── utils/
 │   ├── resolveToken.ts                   # Incoming 토큰 해석 (token → alias → default)
 │   ├── resolveTeamToken.ts               # Team 토큰 해석 (teamId+token → alias)
+│   ├── validateColor.ts                  # Hex 색상 검증 (#RRGGBB)
 │   └── index.ts
 └── tools/
     ├── incoming/                          # 4개: send_message, send_rich_message, validate_token, test_webhook
@@ -510,6 +572,7 @@ import { MCPTool } from "mcp-framework";
 import { z } from "zod";
 import { IncomingWebhookService } from "../../services/IncomingWebhookService.js";
 import { resolveIncomingToken } from "../../utils/resolveToken.js";
+import type { ToolResult } from "../../types/common.js";
 
 interface MyToolInput {
   message: string;
@@ -525,12 +588,17 @@ class MyTool extends MCPTool<MyToolInput> {
     tokenAlias: { type: z.string().optional(), description: "토큰 별칭" },
   };
 
-  async execute(input: MyToolInput) {
+  async execute(input: MyToolInput): Promise<ToolResult> {
     const resolved = resolveIncomingToken(input);
     if (!resolved.success) return { success: false, error: resolved.error };
 
     const message = IncomingWebhookService.createBasicMessage(input.message);
-    return IncomingWebhookService.sendMessage(resolved.config, message);
+    const result = await IncomingWebhookService.sendMessage(resolved.config, message);
+
+    if (result.success) {
+      return { success: true, data: { message: "완료", tokenUsed: resolved.config.alias || 'direct' } };
+    }
+    return { success: false, error: result.error };
   }
 }
 
