@@ -87,23 +87,25 @@ class ValidateOutgoingResponseTool extends MCPTool<ValidateOutgoingResponseInput
 
     return {
       success: true,
-      valid: isValid,
-      message: isValid
-        ? "Outgoing webhook response format is valid"
-        : "Outgoing webhook response has validation issues",
-      issues: issues.length > 0 ? issues : undefined,
-      warnings: warnings.length > 0 ? warnings : undefined,
-      stats: {
-        bodyLength: input.body?.length || 0,
-        maxBodyLength: MAX_BODY_LENGTH,
-        totalDataSize: dataSize,
-        maxDataSize: MAX_DATA_SIZE,
-        connectInfoSections: input.connectInfo?.length || 0
-      },
-      validResponseFormat: {
-        body: "string (required, max 5000 chars)",
-        connectColor: "string (optional, hex color e.g. '#FAC11B')",
-        connectInfo: "array (optional, [{title?, description?, imageUrl?}])"
+      data: {
+        valid: isValid,
+        message: isValid
+          ? "Outgoing webhook response format is valid"
+          : "Outgoing webhook response has validation issues",
+        issues: issues.length > 0 ? issues : undefined,
+        warnings: warnings.length > 0 ? warnings : undefined,
+        stats: {
+          bodyLength: input.body?.length || 0,
+          maxBodyLength: MAX_BODY_LENGTH,
+          totalDataSize: dataSize,
+          maxDataSize: MAX_DATA_SIZE,
+          connectInfoSections: input.connectInfo?.length || 0
+        },
+        validResponseFormat: {
+          body: "string (required, max 5000 chars)",
+          connectColor: "string (optional, hex color e.g. '#FAC11B')",
+          connectInfo: "array (optional, [{title?, description?, imageUrl?}])"
+        }
       }
     };
   }

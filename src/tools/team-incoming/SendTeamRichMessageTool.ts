@@ -83,12 +83,14 @@ class SendTeamRichMessageTool extends MCPTool<SendTeamRichMessageInput> {
       if (result.success) {
         return {
           success: true,
-          message: "Team rich message sent successfully",
-          tokenUsed: resolved.config.alias || 'direct',
-          recipients: input.email,
-          messageDetails: {
-            color: input.color || JandiColors.DEFAULT,
-            attachments: input.connectInfo?.length || 0
+          data: {
+            message: "Team rich message sent successfully",
+            tokenUsed: resolved.config.alias || 'direct',
+            recipients: input.email,
+            messageDetails: {
+              color: input.color || JandiColors.DEFAULT,
+              attachments: input.connectInfo?.length || 0
+            }
           }
         };
       } else {

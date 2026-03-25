@@ -40,14 +40,18 @@ class ValidateTeamTokenTool extends MCPTool<ValidateTeamTokenInput> {
       if (result.success) {
         return {
           success: true,
-          message: "Team webhook token is valid",
-          tokenAlias: resolved.config.alias || 'direct'
+          data: {
+            message: "Team webhook token is valid",
+            tokenAlias: resolved.config.alias || 'direct'
+          }
         };
       } else {
         return {
           success: false,
           error: result.error,
-          tokenAlias: resolved.config.alias || 'direct'
+          data: {
+            tokenAlias: resolved.config.alias || 'direct'
+          }
         };
       }
     } catch (error) {

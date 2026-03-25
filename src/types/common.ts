@@ -50,3 +50,10 @@ export interface ScriptTemplate {
   template: string;
   variables: { [key: string]: string };
 }
+
+export interface ToolResult<T = unknown> {
+  success: boolean;
+  data?: T;
+  error?: string;
+  errorCode?: number;
+}

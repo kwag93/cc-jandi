@@ -72,11 +72,13 @@ class SendRichMessageTool extends MCPTool<SendRichMessageInput> {
       if (result.success) {
         return {
           success: true,
-          message: "Rich message sent successfully to Jandi",
-          tokenUsed: resolved.config.alias || 'direct',
-          messageDetails: {
-            color: input.color || JandiColors.DEFAULT,
-            attachments: input.connectInfo?.length || 0
+          data: {
+            message: "Rich message sent successfully to Jandi",
+            tokenUsed: resolved.config.alias || 'direct',
+            messageDetails: {
+              color: input.color || JandiColors.DEFAULT,
+              attachments: input.connectInfo?.length || 0
+            }
           }
         };
       } else {
