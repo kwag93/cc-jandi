@@ -11,7 +11,7 @@ export abstract class BaseWebhookService {
   protected static readonly MAX_DATA_SIZE = 256 * 1024; // 256KB
   protected static readonly REQUEST_TIMEOUT = 10000; // 10 seconds
   private static readonly MAX_RETRIES = 3;
-  private static readonly RETRY_DELAYS = [1000, 2000, 4000]; // ms
+  private static readonly RETRY_DELAYS = [5000, 15000, 30000]; // ms — Jandi rate limit is 60 req/min
 
   private static sleep(ms: number): Promise<void> {
     return new Promise(resolve => setTimeout(resolve, ms));
@@ -73,7 +73,7 @@ export abstract class BaseWebhookService {
       return { success: false, error: validation.error! } as TResponse;
     }
 
-    let lastResult: TResponse | undefined;
+    let lastResult: TResponse = { success: false, error: 'Max retries exceeded' } as TResponse;
 
     for (let attempt = 0; attempt <= this.MAX_RETRIES; attempt++) {
       if (attempt > 0) {
@@ -105,7 +105,7 @@ export abstract class BaseWebhookService {
       }
     }
 
-    return lastResult!;
+    return lastResult;
   }
 
   protected abstract buildUrl(config: BaseWebhookConfig): string;

@@ -55,16 +55,18 @@ class SendRichMessageTool extends MCPTool<SendRichMessageInput> {
         return { success: false, error: resolved.error };
       }
 
+      let normalizedColor = input.color;
       if (input.color) {
         const colorResult = validateHexColor(input.color);
         if (!colorResult.valid) {
           return { success: false, error: colorResult.error };
         }
+        normalizedColor = colorResult.normalized;
       }
 
       const message = IncomingWebhookService.createRichMessage(
         input.message,
-        input.color,
+        normalizedColor,
         input.connectInfo
       );
       const result = await IncomingWebhookService.sendMessage(resolved.config, message);

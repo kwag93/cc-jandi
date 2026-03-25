@@ -65,17 +65,19 @@ class SendTeamRichMessageTool extends MCPTool<SendTeamRichMessageInput> {
         return { success: false, error: resolved.error };
       }
 
+      let normalizedColor = input.color;
       if (input.color) {
         const colorResult = validateHexColor(input.color);
         if (!colorResult.valid) {
           return { success: false, error: colorResult.error };
         }
+        normalizedColor = colorResult.normalized;
       }
 
       const message = TeamIncomingWebhookService.createRichMessage(
         input.message,
         input.email,
-        input.color,
+        normalizedColor,
         input.connectInfo
       );
       const result = await TeamIncomingWebhookService.sendMessage(resolved.config, message);
