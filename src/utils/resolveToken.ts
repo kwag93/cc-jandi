@@ -15,7 +15,7 @@ export function resolveIncomingToken(input: TokenInput): ResolveResult {
     if (!ConfigService.validateTokenFormat(input.token)) {
       return {
         success: false,
-        error: "Invalid token format. Token should be a 32-character hexadecimal string"
+        error: "Invalid token. Use the part of the Jandi Connect webhook URL that follows '/connect-api/webhook/'"
       };
     }
     return { success: true, config: { token: input.token } };

@@ -17,7 +17,7 @@ class TestWebhookTool extends MCPTool<TestWebhookInput> {
   schema = {
     token: {
       type: z.string().optional(),
-      description: "Jandi webhook token to test (32-character hexadecimal string). If not provided, will use tokenAlias or default token",
+      description: "Jandi webhook token to test — the part of the Connect webhook URL after '/connect-api/webhook/'. If not provided, will use tokenAlias or default token",
     },
     tokenAlias: {
       type: z.string().optional(),

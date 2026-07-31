@@ -29,7 +29,7 @@ class GenerateWebhookScriptTool extends MCPTool<GenerateWebhookScriptInput> {
     },
     token: {
       type: z.string(),
-      description: "Jandi webhook token (32-character hexadecimal string)",
+      description: "Jandi webhook token — the part of the Connect webhook URL after '/connect-api/webhook/'",
     },
     message: {
       type: z.string(),
@@ -74,7 +74,7 @@ class GenerateWebhookScriptTool extends MCPTool<GenerateWebhookScriptInput> {
     const data: Record<string, unknown> = { body: input.message };
 
     if (input.webhookType === 'team-incoming' && input.email) {
-      data.to = input.email;
+      data.email = input.email;
     }
 
     if (hasAttachment) {

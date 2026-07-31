@@ -1,6 +1,6 @@
 import { BaseWebhookService } from './base/BaseWebhookService.js';
 import { TeamIncomingWebhookConfig, TeamIncomingMessage, TeamIncomingResponse } from '../types/team-incoming.js';
-import { BaseJandiMessage, JandiConnectInfo, JandiColors } from '../types/common.js';
+import { JandiConnectInfo, JandiColors, JandiErrorCodes } from '../types/common.js';
 
 export class TeamIncomingWebhookService extends BaseWebhookService {
   private static readonly DEFAULT_URL = 'https://wh.jandi.com/connect-api/team-webhook';
@@ -58,48 +58,42 @@ export class TeamIncomingWebhookService extends BaseWebhookService {
 
     const url = this.getWebhookUrl(config);
 
-    // Jandi Team Incoming Webhook uses 'to' field instead of 'email'
-    const payload: BaseJandiMessage & { to: string } = {
-      body: message.body,
-      connectColor: message.connectColor,
-      connectInfo: message.connectInfo,
-      to: message.email
+    // Jandi rejects or ignores fields outside the documented set, so send only
+    // email / body / connectColor / connectInfo and omit the empty ones.
+    const payload: TeamIncomingMessage = {
+      email: message.email,
+      body: message.body
     };
+    if (message.connectColor) payload.connectColor = message.connectColor;
+    if (message.connectInfo) payload.connectInfo = message.connectInfo;
 
-    return this.sendRequest<BaseJandiMessage, TeamIncomingResponse>(url, payload);
+    return this.sendRequest<TeamIncomingMessage, TeamIncomingResponse>(url, payload);
   }
 
   public static async validateToken(config: TeamIncomingWebhookConfig): Promise<TeamIncomingResponse> {
-    const testMessage: TeamIncomingMessage = {
-      body: 'Team webhook token validation test',
-      connectColor: JandiColors.GRAY,
-      email: ''
-    };
-
-    // For validation, we send a minimal request to check if the endpoint responds
     const url = this.getWebhookUrl(config);
 
-    try {
-      const result = await this.sendRequest<TeamIncomingMessage, TeamIncomingResponse>(url, {
-        body: testMessage.body,
-        connectColor: testMessage.connectColor
-      } as TeamIncomingMessage);
+    // Jandi offers no read-only validation endpoint, so omit the recipient: that gets
+    // the token checked without delivering anything. A bad token answers INVALID_TOKEN,
+    // while a good one is rejected for the missing email instead.
+    const result = await this.sendRequest<TeamIncomingMessage, TeamIncomingResponse>(
+      url,
+      { body: 'Team webhook token validation' } as TeamIncomingMessage
+    );
 
-      // Even if the message fails due to missing email, a 400 vs 401/403 tells us token validity
-      if (result.success) {
-        return { success: true, message: 'Team webhook token is valid' };
-      } else if (result.errorCode === 40000) {
-        return { success: false, error: `Team webhook token validation failed: ${result.error}` };
-      } else {
-        // Non-auth errors might mean the token is valid but request was incomplete
-        return { success: true, message: 'Team webhook token appears valid (endpoint reachable)' };
-      }
-    } catch (error) {
-      return {
-        success: false,
-        error: `Team token validation error: ${error}`
-      };
+    if (result.errorCode === JandiErrorCodes.INVALID_TOKEN) {
+      return { success: false, error: result.error, errorCode: result.errorCode };
     }
+
+    if (result.success || result.errorCode === JandiErrorCodes.INVALID_VALUE) {
+      return { success: true, message: 'Team webhook token is valid' };
+    }
+
+    return {
+      success: false,
+      error: `Could not determine token validity: ${result.error}`,
+      errorCode: result.errorCode
+    };
   }
 
   public static createBasicMessage(body: string, email: string): TeamIncomingMessage {

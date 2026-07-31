@@ -110,9 +110,13 @@ export class ConfigService {
     return null;
   }
 
+  /**
+   * Jandi does not publish a token format, and real webhook addresses appear both
+   * as a single token and as `{teamId}/{token}`. So accept anything usable as a URL
+   * path segment and reject only what would break the request.
+   */
   public static validateTokenFormat(token: string): boolean {
-    const tokenRegex = /^[a-f0-9]{32}$/i;
-    return tokenRegex.test(token);
+    return /^[A-Za-z0-9_\-/]+$/.test(token);
   }
 
   public static listTokenAliases(): string[] {
