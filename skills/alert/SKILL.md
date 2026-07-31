@@ -1,12 +1,13 @@
 ---
-description: 심각도(info/success/warning/error)에 따라 색상 코딩된 알림을 잔디 채널에 전송합니다. 에러, 경고 등 심각도가 있는 알림에 사용합니다.
+name: alert
+description: 심각도에 따라 색상이 다른 알림을 잔디 채널에 보냅니다. "잔디에 에러 알림 보내줘", "장애 알림", "경고 보내줘", "성공 알림 전송" 처럼 info/success/warning/error 구분이 필요한 요청에 사용합니다.
+argument-hint: "[info|success|warning|error] [메시지]"
 ---
 
 # 잔디 심각도별 알림
 
-"$ARGUMENTS"에서 첫 단어를 심각도로, 나머지를 메시지로 파싱하여 색상 코딩된 리치 메시지를 전송합니다.
-
-## 심각도별 색상
+"$ARGUMENTS"의 첫 단어를 심각도로, 나머지를 본문으로 삼아 `send_rich_message`를 호출한다.
+첫 단어가 아래 넷 중 하나가 아니면 전체를 본문으로 보고 심각도는 `info`로 둔다.
 
 | 심각도 | 색상 | Hex |
 |--------|------|-----|
@@ -15,15 +16,8 @@ description: 심각도(info/success/warning/error)에 따라 색상 코딩된 �
 | warning | 주황 | #F39C12 |
 | error | 빨강 | #E74C3C |
 
-## 동작
-
-1. "$ARGUMENTS"의 첫 단어(info/success/warning/error)를 심각도로 파싱
-2. 나머지 텍스트를 메시지 본문으로 사용
-3. `send_rich_message` 도구를 호출하여 색상 코딩된 메시지 전송
-4. 심각도가 지정되지 않으면 기본값 info 사용
-
 ## 예시
 
 - `/cc-jandi:alert error DB 연결 실패` → 빨간색 "DB 연결 실패"
 - `/cc-jandi:alert success 배포 완료` → 초록색 "배포 완료"
-- `/cc-jandi:alert warning 디스크 80% 사용` → 주황색 "디스크 80% 사용"
+- `/cc-jandi:alert 디스크 정리 완료` → 파란색(기본) "디스크 정리 완료"
