@@ -4,6 +4,16 @@ import { TeamIncomingWebhookConfig } from '../types/team-incoming.js';
 
 dotenv.config();
 
+/**
+ * Claude Code substitutes `${user_config.KEY}` into a plugin's MCP env vars. An
+ * optional key the user left blank can arrive as the unexpanded literal, so treat
+ * anything still wearing the placeholder syntax as unset.
+ */
+function readEnv(key: string): string | undefined {
+  const value = process.env[key];
+  return !value || value.startsWith('${') ? undefined : value;
+}
+
 export class ConfigService {
   private static tokens: Map<string, IncomingWebhookConfig> = new Map();
   private static teamTokens: Map<string, TeamIncomingWebhookConfig> = new Map();
@@ -11,7 +21,7 @@ export class ConfigService {
 
   public static initialize(): void {
     // Load default incoming token
-    const defaultToken = process.env.JANDI_TOKEN;
+    const defaultToken = readEnv('JANDI_TOKEN');
     if (defaultToken) {
       this.addToken('default', defaultToken);
     }
@@ -20,7 +30,7 @@ export class ConfigService {
     Object.keys(process.env).forEach(key => {
       if (key.startsWith('JANDI_TOKEN_') && key !== 'JANDI_TOKEN') {
         const alias = key.replace('JANDI_TOKEN_', '').toLowerCase();
-        const token = process.env[key];
+        const token = readEnv(key);
         if (token) {
           this.addToken(alias, token);
         }
@@ -31,7 +41,7 @@ export class ConfigService {
     Object.keys(process.env).forEach(key => {
       if (key.startsWith('JANDI_URL_')) {
         const alias = key.replace('JANDI_URL_', '').toLowerCase();
-        const url = process.env[key];
+        const url = readEnv(key);
         if (url && this.tokens.has(alias)) {
           const config = this.tokens.get(alias)!;
           config.url = url;
@@ -51,11 +61,11 @@ export class ConfigService {
     });
 
     teamAliases.forEach(alias => {
-      const teamId = process.env[`JANDI_TEAM_ID_${alias.toUpperCase()}`];
-      const token = process.env[`JANDI_TEAM_TOKEN_${alias.toUpperCase()}`];
+      const teamId = readEnv(`JANDI_TEAM_ID_${alias.toUpperCase()}`);
+      const token = readEnv(`JANDI_TEAM_TOKEN_${alias.toUpperCase()}`);
       if (teamId && token) {
         const config: TeamIncomingWebhookConfig = { teamId, token, alias };
-        const customUrl = process.env[`JANDI_TEAM_URL_${alias.toUpperCase()}`];
+        const customUrl = readEnv(`JANDI_TEAM_URL_${alias.toUpperCase()}`);
         if (customUrl) {
           config.url = customUrl;
         }
@@ -67,7 +77,7 @@ export class ConfigService {
     Object.keys(process.env).forEach(key => {
       if (key.startsWith('JANDI_OUTGOING_TOKEN_')) {
         const alias = key.replace('JANDI_OUTGOING_TOKEN_', '').toLowerCase();
-        const token = process.env[key];
+        const token = readEnv(key);
         if (token) {
           this.outgoingTokens.set(alias, token);
         }

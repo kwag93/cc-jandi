@@ -304,6 +304,18 @@ The project uses TypeScript with ES modules. The build process:
 
 Node.js version requirement: >=18.19.0
 
+### Release
+
+Pushing to `main` triggers `.github/workflows/release.yml`, which runs semantic-release:
+
+1. `@semantic-release/commit-analyzer` reads Angular-convention commits to pick the next version
+2. `@semantic-release/npm` bumps `package.json` and publishes to npm
+3. `@semantic-release/exec` runs `scripts/sync-version.mjs` to write the same version into
+   `.claude-plugin/plugin.json` — Claude Code serves the cached plugin until that string changes,
+   so skipping this step silently strands plugin users on the old version
+4. `@semantic-release/git` commits `CHANGELOG.md`, `package.json`, `package-lock.json`, and
+   `.claude-plugin/plugin.json`, then tags the release as `v${version}`
+
 ## Common Development Tasks
 
 ### Adding a New Incoming Tool
