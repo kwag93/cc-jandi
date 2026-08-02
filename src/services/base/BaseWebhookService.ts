@@ -48,7 +48,9 @@ export abstract class BaseWebhookService {
     return { valid: true };
   }
 
-  protected static handleJandiError(error: AxiosError): { error: string; errorCode?: number; rateLimited?: boolean } {
+  protected static handleJandiError(
+    error: AxiosError
+  ): { error: string; errorCode?: number; rateLimited?: boolean; field?: string } {
     const status = error.response?.status;
 
     if (status === 429) {
@@ -63,7 +65,7 @@ export abstract class BaseWebhookService {
     // the token is missing the team id segment that precedes it.
     if (status === 403) {
       return {
-        error: 'Webhook rejected with 403 Forbidden. The token must contain both segments Jandi issues, as in "12345678/abcdef0123456789abcdef0123456789".'
+        error: 'Webhook rejected with 403 Forbidden — Jandi could not match the request path. Check that the token is complete: an incoming token carries both segments Jandi issues, as in "12345678/abcdef0123456789abcdef0123456789", and a team webhook needs both a team id and a token.'
       };
     }
 
@@ -84,7 +86,8 @@ export abstract class BaseWebhookService {
       const detail = [body?.msg, field && `field: ${field}`].filter(Boolean).join(', ');
       return {
         error: detail ? `Jandi rejected the request (${detail})` : 'Jandi rejected the request',
-        errorCode: code
+        errorCode: code,
+        field
       };
     }
 
@@ -130,7 +133,8 @@ export abstract class BaseWebhookService {
           success: false,
           error: errorInfo.error,
           errorCode: errorInfo.errorCode,
-          rateLimited: errorInfo.rateLimited
+          rateLimited: errorInfo.rateLimited,
+          field: errorInfo.field
         } as TResponse;
 
         // Only retry on rate limit errors

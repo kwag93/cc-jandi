@@ -88,15 +88,18 @@ export class ConfigService {
   // --- Incoming Token Management ---
 
   public static addToken(alias: string, token: string, url?: string): void {
-    this.tokens.set(alias, {
+    const key = alias.toLowerCase();
+    this.tokens.set(key, {
       token,
       url,
-      alias
+      alias: key
     });
   }
 
+  // Aliases are stored lower-cased because env var names are upper-case by convention,
+  // so every lookup normalizes too — `tokenAlias: "DEV"` and `"dev"` are the same token.
   public static getToken(alias: string): IncomingWebhookConfig | null {
-    return this.tokens.get(alias) || null;
+    return this.tokens.get(alias.toLowerCase()) || null;
   }
 
   public static getAllTokens(): Map<string, IncomingWebhookConfig> {
@@ -104,11 +107,11 @@ export class ConfigService {
   }
 
   public static hasToken(alias: string): boolean {
-    return this.tokens.has(alias);
+    return this.tokens.has(alias.toLowerCase());
   }
 
   public static removeToken(alias: string): boolean {
-    return this.tokens.delete(alias);
+    return this.tokens.delete(alias.toLowerCase());
   }
 
   public static getTokenByValue(tokenValue: string): IncomingWebhookConfig | null {
@@ -136,11 +139,11 @@ export class ConfigService {
   // --- Team Incoming Token Management ---
 
   public static getTeamToken(alias: string): TeamIncomingWebhookConfig | null {
-    return this.teamTokens.get(alias) || null;
+    return this.teamTokens.get(alias.toLowerCase()) || null;
   }
 
   public static hasTeamToken(alias: string): boolean {
-    return this.teamTokens.has(alias);
+    return this.teamTokens.has(alias.toLowerCase());
   }
 
   public static listTeamTokenAliases(): string[] {
@@ -154,11 +157,11 @@ export class ConfigService {
   // --- Outgoing Token Management ---
 
   public static getOutgoingToken(alias: string): string | null {
-    return this.outgoingTokens.get(alias) || null;
+    return this.outgoingTokens.get(alias.toLowerCase()) || null;
   }
 
   public static hasOutgoingToken(alias: string): boolean {
-    return this.outgoingTokens.has(alias);
+    return this.outgoingTokens.has(alias.toLowerCase());
   }
 
   public static listOutgoingTokenAliases(): string[] {

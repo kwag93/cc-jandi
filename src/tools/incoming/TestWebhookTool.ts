@@ -39,7 +39,7 @@ class TestWebhookTool extends MCPTool<TestWebhookInput> {
       const config = resolved.config;
       const testType = input.testType || 'basic';
       const timestamp = new Date().toISOString();
-      const results: Array<{ type: string; success: boolean; error?: string }> = [];
+      const results: Array<{ type: string; success: boolean; error?: string; errorCode?: number }> = [];
 
       if (testType === 'basic' || testType === 'all') {
         const basicMessage = IncomingWebhookService.createBasicMessage(
@@ -49,7 +49,8 @@ class TestWebhookTool extends MCPTool<TestWebhookInput> {
         results.push({
           type: 'basic',
           success: basicResult.success,
-          error: basicResult.error
+          error: basicResult.error,
+          errorCode: basicResult.errorCode
         });
       }
 
@@ -66,7 +67,8 @@ class TestWebhookTool extends MCPTool<TestWebhookInput> {
         results.push({
           type: 'rich',
           success: richResult.success,
-          error: richResult.error
+          error: richResult.error,
+          errorCode: richResult.errorCode
         });
       }
 
@@ -83,7 +85,8 @@ class TestWebhookTool extends MCPTool<TestWebhookInput> {
           results.push({
             type: `status_${statusType}`,
             success: statusResult.success,
-            error: statusResult.error
+            error: statusResult.error,
+            errorCode: statusResult.errorCode
           });
         }
       }

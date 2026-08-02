@@ -92,11 +92,15 @@ class SendTeamRichMessageTool extends MCPTool<SendTeamRichMessageInput> {
             messageDetails: {
               color: input.color || JandiColors.DEFAULT,
               attachments: input.connectInfo?.length || 0
-            }
+            },
+            // Jandi reports per-recipient delivery; surface it so the caller can see
+            // which addresses it could not match to an account.
+            ...(result.validEmails ? { validEmails: result.validEmails } : {}),
+            ...(result.invalidEmails ? { invalidEmails: result.invalidEmails } : {})
           }
         };
       } else {
-        return { success: false, error: result.error };
+        return { success: false, error: result.error, errorCode: result.errorCode };
       }
     } catch (error) {
       return { success: false, error: `Unexpected error: ${error}` };

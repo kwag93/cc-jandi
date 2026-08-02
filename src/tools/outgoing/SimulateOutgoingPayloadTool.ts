@@ -119,8 +119,11 @@ class SimulateOutgoingPayloadTool extends MCPTool<SimulateOutgoingPayloadInput> 
   private stripKeyword(text: string, keyword: string): string {
     const trimmed = text.trimStart();
     for (const prefix of [`/${keyword}`, keyword]) {
-      if (trimmed.startsWith(prefix)) {
-        return trimmed.slice(prefix.length).trimStart();
+      // Require a word boundary so keyword "test" does not turn "testing 123"
+      // into "ing 123" — Jandi triggers on the leading token, not a substring.
+      const rest = trimmed.slice(prefix.length);
+      if (trimmed.startsWith(prefix) && (rest === '' || /^\s/.test(rest))) {
+        return rest.trimStart();
       }
     }
     return trimmed;

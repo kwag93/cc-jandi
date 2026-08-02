@@ -54,11 +54,15 @@ class SendTeamMessageTool extends MCPTool<SendTeamMessageInput> {
           data: {
             message: "Team message sent successfully",
             tokenUsed: resolved.config.alias || 'direct',
-            recipients: input.email
+            recipients: input.email,
+            // Jandi reports per-recipient delivery; surface it so the caller can see
+            // which addresses it could not match to an account.
+            ...(result.validEmails ? { validEmails: result.validEmails } : {}),
+            ...(result.invalidEmails ? { invalidEmails: result.invalidEmails } : {})
           }
         };
       } else {
-        return { success: false, error: result.error };
+        return { success: false, error: result.error, errorCode: result.errorCode };
       }
     } catch (error) {
       return { success: false, error: `Unexpected error: ${error}` };

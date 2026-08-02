@@ -48,6 +48,7 @@ class ValidateTokenTool extends MCPTool<ValidateTokenInput> {
         return {
           success: false,
           error: result.error,
+          errorCode: result.errorCode,
           data: {
             tokenAlias: resolved.config.alias || 'direct',
             tokenFormat: "valid_format_but_failed"

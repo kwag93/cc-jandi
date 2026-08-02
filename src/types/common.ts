@@ -29,6 +29,8 @@ export interface BaseJandiResponse {
   error?: string;
   errorCode?: number;
   rateLimited?: boolean;
+  /** Request field Jandi rejected, when it names one (e.g. `teamId`). */
+  field?: string;
 }
 
 export interface BaseWebhookConfig {

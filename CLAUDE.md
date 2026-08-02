@@ -224,6 +224,11 @@ stores `sensitive` values in the system keychain and substitutes them into `.mcp
 `ConfigService` needs no plugin-specific branch. An optional key the user leaves blank can arrive
 as the unexpanded literal, which `readEnv()` in `configService.ts` filters out.
 
+Plugin-supplied team credentials land under the `default` alias (`JANDI_TEAM_ID_DEFAULT` /
+`JANDI_TEAM_TOKEN_DEFAULT`), and `resolveTeamToken()` falls back to that alias — otherwise a user
+who filled in the plugin's team fields would still have to pass `tokenAlias: "default"` by hand.
+Alias lookups are case-insensitive: `ConfigService` stores them lower-cased and normalizes on read.
+
 Running the server directly (`npx cc-jandi`) uses env vars only:
 
 ```env

@@ -85,6 +85,17 @@ export class TeamIncomingWebhookService extends BaseWebhookService {
       return { success: false, error: result.error, errorCode: result.errorCode };
     }
 
+    // Jandi answers INVALID_VALUE both for the omitted recipient (token was fine) and
+    // for a malformed team id (token never got checked), so split on the named field.
+    if (result.errorCode === JandiErrorCodes.INVALID_VALUE && result.field === 'teamId') {
+      return {
+        success: false,
+        error: 'Invalid team id — Jandi rejected it before checking the token',
+        errorCode: result.errorCode,
+        field: result.field
+      };
+    }
+
     if (result.success || result.errorCode === JandiErrorCodes.INVALID_VALUE) {
       return { success: true, message: 'Team webhook token is valid' };
     }

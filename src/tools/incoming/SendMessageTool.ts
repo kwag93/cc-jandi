@@ -47,7 +47,7 @@ class SendMessageTool extends MCPTool<SendMessageInput> {
           }
         };
       } else {
-        return { success: false, error: result.error };
+        return { success: false, error: result.error, errorCode: result.errorCode };
       }
     } catch (error) {
       return { success: false, error: `Unexpected error: ${error}` };
