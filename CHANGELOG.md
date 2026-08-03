@@ -1,3 +1,17 @@
+# [1.1.0](https://github.com/kwag93/cc-jandi/compare/v1.0.1...v1.1.0) (2026-08-03)
+
+
+### Bug Fixes
+
+* 독립 리뷰 지적 반영 — 토큰 해석과 응답 전파 정합화 ([0aaad37](https://github.com/kwag93/cc-jandi/commit/0aaad37c62c923559c033e581577a9a385600210))
+* 잔디 웹훅 통신을 공식 스펙과 실측 결과에 맞게 교정 ([831ca37](https://github.com/kwag93/cc-jandi/commit/831ca373b868e41af2527cab0286fdb67c43f233))
+
+
+### Features
+
+* skills와 agents를 현행 frontmatter 규약에 맞게 정비 ([8de6975](https://github.com/kwag93/cc-jandi/commit/8de6975b1506167d561a830709be9c03f9f07b7d))
+* 플러그인 매니페스트를 현행 Claude Code 규약으로 개편 ([ddcbacc](https://github.com/kwag93/cc-jandi/commit/ddcbacc9842c315e42b066d1879ecdc6be859832))
+
 # Changelog
 
 이 프로젝트의 모든 주요 변경사항이 이 파일에 기록됩니다.

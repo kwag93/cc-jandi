@@ -2,7 +2,7 @@
   "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "cc-jandi",
   "displayName": "JANDI (잔디)",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "잔디(JANDI) 웹훅으로 채널·개인 알림을 보내고, 아웃고잉 웹훅 핸들러와 연동 스크립트를 생성하는 플러그인",
   "author": {
     "name": "kwag93"
