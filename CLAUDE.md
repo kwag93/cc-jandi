@@ -52,7 +52,10 @@ agents/                         # Agents (notification-composer, webhook-debugge
 scripts/sync-version.mjs        # 릴리즈 시 plugin.json 버전 동기화
 .mcp.json                       # MCP 서버 번들링 (${user_config.*} 치환)
 src/
-  index.ts                          # Server entry point
+  index.ts                          # Entry point. Passes name/version to MCPServer explicitly —
+                                    # mcp-framework otherwise reads the cwd's package.json, which
+                                    # under `npx` is the user's project, and falls back to
+                                    # "unnamed-mcp-server@0.0.0"
   types/
     common.ts                       # Shared types: JandiConnectInfo, JandiColors, JandiErrorCodes, BaseWebhookConfig, ToolResult<T>
     incoming.ts                     # IncomingWebhookConfig, IncomingMessage, IncomingResponse
