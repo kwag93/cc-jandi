@@ -2,6 +2,13 @@
 
 이 프로젝트의 주요 변경사항을 기록합니다. 버전은 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며, 1.0.1 이후 항목은 커밋 이력에서 [semantic-release](https://semantic-release.gitbook.io/)가 자동 생성합니다.
 
+## [1.1.2](https://github.com/kwag93/cc-jandi/compare/v1.1.1...v1.1.2) (2026-08-03)
+
+
+### Bug Fixes
+
+* MCP 클라이언트에 서버 이름이 unnamed-mcp-server로 표시되던 문제 ([0cddf4e](https://github.com/kwag93/cc-jandi/commit/0cddf4e37b998c3fc94f2666d730799f071251cd))
+
 ## [1.1.1](https://github.com/kwag93/cc-jandi/compare/v1.1.0...v1.1.1) (2026-08-03)
 
 # [1.1.0](https://github.com/kwag93/cc-jandi/compare/v1.0.1...v1.1.0) (2026-08-03)
