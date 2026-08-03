@@ -18,6 +18,10 @@ export default {
     '@semantic-release/release-notes-generator',
     ['@semantic-release/changelog', {
       changelogFile: 'CHANGELOG.md',
+      // Without a title the generator prepends to the very top of the file, which
+      // pushed the document heading down below each release. Pinning it here keeps
+      // the heading in place and inserts new releases underneath it.
+      changelogTitle: '# Changelog\n\n이 프로젝트의 주요 변경사항을 기록합니다. 버전은 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며, 1.0.1 이후 항목은 커밋 이력에서 [semantic-release](https://semantic-release.gitbook.io/)가 자동 생성합니다.',
     }],
     ['@semantic-release/npm', {
       npmPublish: true,

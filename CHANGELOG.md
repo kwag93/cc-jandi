@@ -1,3 +1,7 @@
+# Changelog
+
+이 프로젝트의 주요 변경사항을 기록합니다. 버전은 [Semantic Versioning](https://semver.org/lang/ko/)을 따르며, 1.0.1 이후 항목은 커밋 이력에서 [semantic-release](https://semantic-release.gitbook.io/)가 자동 생성합니다.
+
 # [1.1.0](https://github.com/kwag93/cc-jandi/compare/v1.0.1...v1.1.0) (2026-08-03)
 
 
@@ -11,13 +15,6 @@
 
 * skills와 agents를 현행 frontmatter 규약에 맞게 정비 ([8de6975](https://github.com/kwag93/cc-jandi/commit/8de6975b1506167d561a830709be9c03f9f07b7d))
 * 플러그인 매니페스트를 현행 Claude Code 규약으로 개편 ([ddcbacc](https://github.com/kwag93/cc-jandi/commit/ddcbacc9842c315e42b066d1879ecdc6be859832))
-
-# Changelog
-
-이 프로젝트의 모든 주요 변경사항이 이 파일에 기록됩니다.
-
-이 형식은 [Keep a Changelog](https://keepachangelog.com/ko/1.0.0/)를 기반으로 하며, 
-[Semantic Versioning](https://semver.org/lang/ko/)을 준수합니다.
 
 ## [1.0.0] - 2026-03-25
 
@@ -35,8 +32,6 @@
 - validateHexColor() 공용 유틸리티
 - Claude Code 플러그인 매니페스트 (.claude-plugin/plugin.json)
 - MCP 서버 번들링 (.mcp.json)
-
-## [Unreleased]
 
 ## [0.1.0] - 2025-01-09
 
