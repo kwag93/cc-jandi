@@ -124,7 +124,7 @@ app.listen(PORT, () => {
 
     return `from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
-from typing import Optional, Dict, Any, List
+from typing import Optional, List
 from datetime import datetime
 import uvicorn
 
@@ -145,11 +145,11 @@ class OutgoingPayload(BaseModel):
     writerName: Optional[str] = None  # Standard Outgoing
     writerEmail: Optional[str] = None  # Standard Outgoing
     writer: Optional[Writer] = None  # Team Outgoing
-    text: str
+    text: str  # Full message, trigger keyword included
     keyword: str
     createdAt: str
-    data: Optional[Dict[str, Any]] = None
-    platform: Optional[str] = None
+    data: Optional[str] = None  # Message with the trigger keyword stripped
+    platform: Optional[str] = None  # web | ios | android
     ip: Optional[str] = None
 
 

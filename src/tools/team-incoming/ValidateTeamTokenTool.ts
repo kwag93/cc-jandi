@@ -49,8 +49,10 @@ class ValidateTeamTokenTool extends MCPTool<ValidateTeamTokenInput> {
         return {
           success: false,
           error: result.error,
+          errorCode: result.errorCode,
           data: {
-            tokenAlias: resolved.config.alias || 'direct'
+            tokenAlias: resolved.config.alias || 'direct',
+            ...(result.field ? { rejectedField: result.field } : {})
           }
         };
       }

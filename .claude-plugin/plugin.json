@@ -1,12 +1,45 @@
 {
+  "$schema": "https://json.schemastore.org/claude-code-plugin-manifest.json",
   "name": "cc-jandi",
-  "description": "잔디(Jandi) 웹훅 메시지 전송, 알림 자동화를 위한 Claude Code 플러그인",
-  "version": "1.0.0",
+  "displayName": "JANDI (잔디)",
+  "version": "1.0.1",
+  "description": "잔디(JANDI) 웹훅으로 채널·개인 알림을 보내고, 아웃고잉 웹훅 핸들러와 연동 스크립트를 생성하는 플러그인",
   "author": {
     "name": "kwag93"
   },
-  "homepage": "https://github.com/kwag93/cc-jandi",
+  "homepage": "https://github.com/kwag93/cc-jandi#readme",
   "repository": "https://github.com/kwag93/cc-jandi",
   "license": "MIT",
-  "keywords": ["jandi", "webhook", "notification", "korean", "collaboration"]
+  "keywords": [
+    "jandi",
+    "webhook",
+    "notification",
+    "korean",
+    "collaboration",
+    "mcp"
+  ],
+  "mcpServers": "./.mcp.json",
+  "userConfig": {
+    "jandi_token": {
+      "type": "string",
+      "title": "Incoming Webhook 토큰",
+      "description": "잔디 커넥트가 발급한 웹훅 URL에서 '/connect-api/webhook/' 뒤에 오는 전체 경로. 두 세그먼트를 모두 포함해야 합니다 (예: 12345678/abcdef0123456789abcdef0123456789)",
+      "sensitive": true,
+      "required": false
+    },
+    "jandi_team_id": {
+      "type": "string",
+      "title": "Team Webhook 팀 ID (선택)",
+      "description": "이메일로 개인 메시지를 보내는 Team Incoming Webhook용 팀 ID. 유료 팀 전용이며 토스랩(support@tosslab.com)이 발급합니다",
+      "sensitive": false,
+      "required": false
+    },
+    "jandi_team_token": {
+      "type": "string",
+      "title": "Team Webhook 토큰 (선택)",
+      "description": "Team Incoming Webhook 토큰. 팀 ID와 한 쌍으로 설정해야 동작합니다",
+      "sensitive": true,
+      "required": false
+    }
+  }
 }

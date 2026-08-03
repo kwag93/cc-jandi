@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-This is a Model Context Protocol (MCP) server and Claude Code plugin for Jandi (Korean team collaboration tool) built with mcp-framework. It supports all 4 Jandi webhook types: **Incoming Webhook** (channel messages), **Team Incoming Webhook** (personal messages), **Outgoing Webhook**, and **Team Outgoing Webhook**. The server automatically discovers and loads tools recursively from the `src/tools/` directory. As a Claude Code plugin, it provides skills, agents, and hooks for streamlined Jandi integration.
+This is a Model Context Protocol (MCP) server and Claude Code plugin for Jandi (Korean team collaboration tool) built with mcp-framework. It supports all 4 Jandi webhook types: **Incoming Webhook** (channel messages), **Team Incoming Webhook** (personal messages), **Outgoing Webhook**, and **Team Outgoing Webhook**. The server automatically discovers and loads tools recursively from the `src/tools/` directory. As a Claude Code plugin, it ships skills and agents, and takes its tokens through `userConfig` so users never hand-edit a settings file.
 
 ## Common Commands
 
@@ -45,20 +45,20 @@ cc-jandi
 
 ### Directory Structure
 ```
-.claude-plugin/plugin.json    # 플러그인 매니페스트
-skills/                       # Skills (notify, alert, deploy-notify, daily-report)
-agents/                       # Agents (notification-composer, webhook-debugger)
-hooks/hooks.json             # Hooks 설정
-.mcp.json                    # MCP 서버 번들링
+.claude-plugin/plugin.json      # 플러그인 매니페스트 (userConfig 포함)
+.claude-plugin/marketplace.json # 마켓플레이스 매니페스트
+skills/                         # Skills (notify, alert, deploy-notify, daily-report)
+agents/                         # Agents (notification-composer, webhook-debugger)
+scripts/sync-version.mjs        # 릴리즈 시 plugin.json 버전 동기화
+.mcp.json                       # MCP 서버 번들링 (${user_config.*} 치환)
 src/
   index.ts                          # Server entry point
   types/
-    common.ts                       # Shared types: JandiConnectInfo, JandiColors, BaseWebhookConfig, ToolResult<T>
+    common.ts                       # Shared types: JandiConnectInfo, JandiColors, JandiErrorCodes, BaseWebhookConfig, ToolResult<T>
     incoming.ts                     # IncomingWebhookConfig, IncomingMessage, IncomingResponse
     team-incoming.ts                # TeamIncomingWebhookConfig, TeamIncomingMessage, TeamIncomingResponse
     outgoing.ts                     # OutgoingWebhookPayload, TeamOutgoingWebhookPayload, OutgoingWebhookResponse
-    index.ts                        # All type re-exports + backward compatibility aliases
-    jandi.ts                        # Backward compatibility facade (deprecated, use index.ts)
+    index.ts                        # All type re-exports
   services/
     base/
       BaseWebhookService.ts         # Abstract base: validation, error handling, HTTP, rate limit retry
@@ -69,7 +69,7 @@ src/
   utils/
     resolveToken.ts                  # Incoming token resolution (deduplicates tool logic)
     resolveTeamToken.ts              # Team token resolution
-    validateHexColor.ts              # Hex color validation utility
+    validateColor.ts                 # Hex color validation utility
     index.ts                         # Utility re-exports
   tools/
     incoming/
@@ -106,13 +106,15 @@ interface ToolResult<T = unknown> {
 Common webhook logic shared by all services:
 - HTTP headers, request timeout
 - Message validation (5000 chars, 256KB limits)
-- Jandi-specific error handling (40000, 42900)
+- Jandi-specific error handling (see `JandiErrorCodes`, plus HTTP 403 for an unmatched path)
 - Rate limit retry with exponential backoff (max 3 attempts)
-- Generic `sendRequest()` method
+- Generic `sendRequest()` method, which merges the success response body into the result
+  so Team Incoming's `validEmails` / `invalidEmails` reach the caller
 
 #### IncomingWebhookService
 Handles Incoming Webhook (channel messages):
-- URL: `https://wh.jandi.com/connect-api/webhook/{token}`
+- URL: `https://wh.jandi.com/connect-api/webhook/{token}`, where `token` is the whole path
+  Jandi issues after `/webhook/` — normally two segments, `{teamId}/{token}`
 - `sendMessage()`, `validateToken()`
 - `createBasicMessage()`, `createRichMessage()`, `createStatusMessage()`
 
@@ -130,8 +132,10 @@ Manages webhook tokens across all types:
 
 ### Key Utilities
 
-#### validateHexColor(color: string): boolean
-Validates hex color strings (e.g., `#FF0000`, `#abc`). Used by rich message tools to validate `connectColor` before sending.
+#### validateHexColor(color: string): ColorValidationResult
+Lives in `utils/validateColor.ts`. Validates 6-digit hex strings (e.g. `#FF0000`) and returns
+`{ valid, normalized?, error? }` — not a boolean. Used by rich message tools to check
+`connectColor` before sending.
 
 ### Available Tools (11)
 
@@ -212,11 +216,25 @@ class MyTool extends MCPTool<MyToolInput> {
 export default MyTool;
 ```
 
-## Environment Configuration
+## Configuration
+
+Plugin installs collect tokens through `userConfig` in `.claude-plugin/plugin.json`. Claude Code
+stores `sensitive` values in the system keychain and substitutes them into `.mcp.json` as
+`${user_config.KEY}`, which lands in the same `JANDI_*` env vars the server already reads — so
+`ConfigService` needs no plugin-specific branch. An optional key the user leaves blank can arrive
+as the unexpanded literal, which `readEnv()` in `configService.ts` filters out.
+
+Plugin-supplied team credentials land under the `default` alias (`JANDI_TEAM_ID_DEFAULT` /
+`JANDI_TEAM_TOKEN_DEFAULT`), and `resolveTeamToken()` falls back to that alias — otherwise a user
+who filled in the plugin's team fields would still have to pass `tokenAlias: "default"` by hand.
+Alias lookups are case-insensitive: `ConfigService` stores them lower-cased and normalizes on read.
+
+Running the server directly (`npx cc-jandi`) uses env vars only:
 
 ```env
 # Incoming Webhook (channel messages)
-JANDI_TOKEN=your_default_token_here
+# The token is the whole path after /connect-api/webhook/, normally two segments.
+JANDI_TOKEN=12345678/abcdef0123456789abcdef0123456789
 JANDI_TOKEN_DEV=your_dev_token_here
 JANDI_URL_DEV=https://custom-url  # optional
 
@@ -231,10 +249,19 @@ JANDI_OUTGOING_TOKEN_DEPLOY=verification_token
 
 ## Error Handling
 
-The server handles Jandi-specific errors via `BaseWebhookService`:
-- **40000**: Invalid webhook token or inactive webhook
-- **42900**: Rate limit exceeded (60 req/min, 500 req/10min) — automatic retry with exponential backoff (max 3 attempts)
+`BaseWebhookService` maps Jandi's responses. Jandi's public docs list the HTTP statuses but not
+the code numbers, so these were verified against the live endpoint (2026-07):
+
+- **40051**: Invalid token, or the webhook is disabled or deleted
+- **40000**: A request parameter failed validation. The body carries `data.errors.path` naming the
+  field; never log `data.errors.value`, which can hold the token
+- **HTTP 403**: The gateway could not match the path — in practice the token is missing its team id
+  segment. Returned as plain HTML, not JSON
+- **42900**: Rate limit exceeded (60 req/min, 500 req/10min) — automatic retry with exponential
+  backoff (max 3 attempts)
 - **Message validation**: 5000 characters max, 256KB data size max
+
+Do not treat `40000` as "bad token": Jandi returns it for a malformed payload too.
 
 ## Jandi Webhook Formats
 
@@ -250,50 +277,69 @@ The server handles Jandi-specific errors via `BaseWebhookService`:
   }]
 }
 ```
-Team Incoming adds `"to": "user@example.com"` for recipient targeting.
+`body` supports Jandi's link markdown: `[[label]](https://url)`.
+
+Team Incoming targets recipients with **`email`** (comma-separated, max 100; exceeding that drops
+every message). It is **not** `to`. Jandi ignores or rejects fields outside the documented set, so
+send only `email` / `body` / `connectColor` / `connectInfo`. Its response is
+`{ validEmails: [...], invalidEmails: [...] }`.
+
+Team Incoming is a **paid-team feature** and Tosslab issues the team id and token directly
+(support@tosslab.com), so most installs will not have one configured.
 
 ### Outgoing Webhook (Payload from Jandi)
 ```json
 {
-  "token": "verification_token",
-  "teamName": "MyTeam",
-  "roomName": "General",
-  "writerName": "User",
-  "text": "Message text",
-  "keyword": "trigger",
-  "createdAt": "2024-01-01T00:00:00Z"
+  "token": "YE1ronbbuoZkq7h3J5KMI4Tn",
+  "teamName": "Toss Lab, Inc.",
+  "roomName": "Bulletin Board",
+  "writerName": "Kevin",
+  "writerEmail": "kevin@tosslab.com",
+  "text": "/weather How is the weather in New York tomorrow?",
+  "data": "How is the weather in New York tomorrow?",
+  "keyword": "weather",
+  "createdAt": "2017-05-15T11:34:11.266Z",
+  "platform": "web",
+  "ip": "12.345.67.89"
 }
 ```
+`text` holds the full message including the trigger keyword; `data` is the same message with the
+keyword stripped, and it is a **string**, not an object. Team Outgoing replaces
+`writerName`/`writerEmail` with `writer: {id, name, email, phoneNumber}`.
 
 ### Outgoing Webhook (Response to Jandi)
 Same format as Incoming message: `{ body, connectColor?, connectInfo? }`
 
-## Claude Desktop Integration
+## Installation Paths
 
-### Local Development
-Add to `claude_desktop_config.json`:
-```json
-{
-  "mcpServers": {
-    "cc-jandi": {
-      "command": "node",
-      "args": ["/absolute/path/to/cc-jandi/dist/index.js"]
-    }
-  }
-}
+### As a Claude Code plugin
+```bash
+/plugin marketplace add kwag93/cc-jandi
+/plugin install cc-jandi@kwag93-jandi
 ```
+Brings the skills and agents along and prompts for tokens via `userConfig`.
 
-### After Publishing
+Validate a local checkout before publishing:
+```bash
+claude plugin validate . --strict
+```
+Note that with `marketplace.json` present the command validates the marketplace manifest. To check
+`plugin.json` and the skill/agent frontmatter instead, run it against a copy that omits
+`marketplace.json`.
+
+### As an MCP server
 ```json
 {
   "mcpServers": {
     "cc-jandi": {
       "command": "npx",
-      "args": ["cc-jandi"]
+      "args": ["cc-jandi"],
+      "env": { "JANDI_TOKEN": "12345678/abcdef0123456789abcdef0123456789" }
     }
   }
 }
 ```
+For local development point `command` at `node` and `args` at the absolute `dist/index.js` path.
 
 ## Build System
 
@@ -303,6 +349,18 @@ The project uses TypeScript with ES modules. The build process:
 3. The `bin` field in package.json points to `dist/index.js`
 
 Node.js version requirement: >=18.19.0
+
+### Release
+
+Pushing to `main` triggers `.github/workflows/release.yml`, which runs semantic-release:
+
+1. `@semantic-release/commit-analyzer` reads Angular-convention commits to pick the next version
+2. `@semantic-release/npm` bumps `package.json` and publishes to npm
+3. `@semantic-release/exec` runs `scripts/sync-version.mjs` to write the same version into
+   `.claude-plugin/plugin.json` — Claude Code serves the cached plugin until that string changes,
+   so skipping this step silently strands plugin users on the old version
+4. `@semantic-release/git` commits `CHANGELOG.md`, `package.json`, `package-lock.json`, and
+   `.claude-plugin/plugin.json`, then tags the release as `v${version}`
 
 ## Common Development Tasks
 
@@ -324,9 +382,11 @@ Node.js version requirement: >=18.19.0
 
 ### Testing Token Configuration
 1. Set up `.env` file with tokens
-2. Use `validate_token` tool for incoming webhooks
-3. Use `validate_team_token` tool for team webhooks
-4. Use `test_webhook` tool for comprehensive testing
+2. Use `validate_token` for incoming webhooks — **this posts a real message to the channel**,
+   since Jandi has no read-only validation endpoint
+3. Use `validate_team_token` for team webhooks — this one omits the recipient, so nothing is
+   delivered
+4. Use `test_webhook` for comprehensive testing — also posts real messages
 
 ### Generating Scripts
 Use `generate_webhook_script` tool with `webhookType` parameter to create scripts for incoming or team-incoming webhooks in Python, Node.js, curl, or bash.

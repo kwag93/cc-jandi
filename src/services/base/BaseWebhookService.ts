@@ -1,5 +1,17 @@
 import axios, { AxiosError } from 'axios';
-import { BaseJandiMessage, BaseJandiResponse, BaseWebhookConfig } from '../../types/common.js';
+import { BaseJandiMessage, BaseJandiResponse, BaseWebhookConfig, JandiErrorCodes } from '../../types/common.js';
+
+/** Error body Jandi returns with an HTTP 400. */
+interface JandiErrorBody {
+  code?: number;
+  msg?: string;
+  data?: {
+    errors?: {
+      path?: string;
+      msg?: string;
+    };
+  };
+}
 
 export abstract class BaseWebhookService {
   protected static readonly HEADERS = {
@@ -36,26 +48,46 @@ export abstract class BaseWebhookService {
     return { valid: true };
   }
 
-  protected static handleJandiError(error: AxiosError): { error: string; errorCode?: number; rateLimited?: boolean } {
-    if (error.response?.status === 429) {
+  protected static handleJandiError(
+    error: AxiosError
+  ): { error: string; errorCode?: number; rateLimited?: boolean; field?: string } {
+    const status = error.response?.status;
+
+    if (status === 429) {
       return {
         error: 'Rate limit exceeded. Jandi allows 60 requests/min and 500 requests/10min. Please wait and try again.',
-        errorCode: 42900,
+        errorCode: JandiErrorCodes.RATE_LIMITED,
         rateLimited: true
       };
     }
 
-    if (error.response?.status === 400) {
-      const data = error.response.data as Record<string, unknown>;
-      if (data?.code === 40000) {
+    // Jandi's gateway refuses a path it cannot match at all, which in practice means
+    // the token is missing the team id segment that precedes it.
+    if (status === 403) {
+      return {
+        error: 'Webhook rejected with 403 Forbidden — Jandi could not match the request path. Check that the token is complete: an incoming token carries both segments Jandi issues, as in "12345678/abcdef0123456789abcdef0123456789", and a team webhook needs both a team id and a token.'
+      };
+    }
+
+    if (status === 400) {
+      const body = error.response?.data as JandiErrorBody | undefined;
+      const code = typeof body?.code === 'number' ? body.code : undefined;
+
+      if (code === JandiErrorCodes.INVALID_TOKEN) {
         return {
-          error: 'Invalid webhook token format or inactive/deleted webhook',
-          errorCode: 40000
+          error: 'Invalid webhook token, or the webhook has been disabled or deleted',
+          errorCode: code
         };
       }
+
+      // Name the offending field when Jandi identifies one, but never echo `value` —
+      // it can carry the token itself.
+      const field = body?.data?.errors?.path;
+      const detail = [body?.msg, field && `field: ${field}`].filter(Boolean).join(', ');
       return {
-        error: 'Invalid request data format',
-        errorCode: 40000
+        error: detail ? `Jandi rejected the request (${detail})` : 'Jandi rejected the request',
+        errorCode: code,
+        field
       };
     }
 
@@ -81,12 +113,18 @@ export abstract class BaseWebhookService {
       }
 
       try {
-        await axios.post(url, message, {
+        const response = await axios.post(url, message, {
           headers: this.HEADERS,
           timeout: this.REQUEST_TIMEOUT
         });
 
-        return { success: true, message: 'Message sent successfully' } as TResponse;
+        // Team Incoming returns { validEmails, invalidEmails }; merge it through
+        // so callers can report which recipients were actually delivered to.
+        const body = typeof response.data === 'object' && response.data !== null
+          ? response.data as Record<string, unknown>
+          : {};
+
+        return { ...body, success: true, message: 'Message sent successfully' } as TResponse;
       } catch (error) {
         const axiosError = error as AxiosError;
         const errorInfo = this.handleJandiError(axiosError);
@@ -95,7 +133,8 @@ export abstract class BaseWebhookService {
           success: false,
           error: errorInfo.error,
           errorCode: errorInfo.errorCode,
-          rateLimited: errorInfo.rateLimited
+          rateLimited: errorInfo.rateLimited,
+          field: errorInfo.field
         } as TResponse;
 
         // Only retry on rate limit errors

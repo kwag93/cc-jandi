@@ -15,7 +15,7 @@ class ValidateTokenTool extends MCPTool<ValidateTokenInput> {
   schema = {
     token: {
       type: z.string().optional(),
-      description: "Jandi webhook token to validate (32-character hexadecimal string). If not provided, will use tokenAlias or default token",
+      description: "Jandi webhook token to validate — the part of the Connect webhook URL after '/connect-api/webhook/'. If not provided, will use tokenAlias or default token",
     },
     tokenAlias: {
       type: z.string().optional(),
@@ -48,6 +48,7 @@ class ValidateTokenTool extends MCPTool<ValidateTokenInput> {
         return {
           success: false,
           error: result.error,
+          errorCode: result.errorCode,
           data: {
             tokenAlias: resolved.config.alias || 'direct',
             tokenFormat: "valid_format_but_failed"

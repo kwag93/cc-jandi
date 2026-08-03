@@ -6,11 +6,13 @@ export interface OutgoingWebhookPayload {
   roomName: string;
   writerName: string;
   writerEmail: string;
+  /** Full message text, including the trigger keyword. */
   text: string;
   keyword: string;
   createdAt: string;
-  data?: Record<string, unknown>;
-  platform?: string;
+  /** Message text with the trigger keyword stripped. */
+  data?: string;
+  platform?: 'web' | 'ios' | 'android';
   ip?: string;
 }
 
@@ -24,11 +26,13 @@ export interface TeamOutgoingWebhookPayload {
     email: string;
     phoneNumber?: string;
   };
+  /** Full message text, including the trigger keyword. */
   text: string;
   keyword: string;
   createdAt: string;
-  data?: Record<string, unknown>;
-  platform?: string;
+  /** Message text with the trigger keyword stripped. */
+  data?: string;
+  platform?: 'web' | 'ios' | 'android';
   ip?: string;
 }
 

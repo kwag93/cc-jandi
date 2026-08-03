@@ -2,7 +2,12 @@
   "mcpServers": {
     "cc-jandi": {
       "command": "node",
-      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/index.js"]
+      "args": ["${CLAUDE_PLUGIN_ROOT}/dist/index.js"],
+      "env": {
+        "JANDI_TOKEN": "${user_config.jandi_token}",
+        "JANDI_TEAM_ID_DEFAULT": "${user_config.jandi_team_id}",
+        "JANDI_TEAM_TOKEN_DEFAULT": "${user_config.jandi_team_token}"
+      }
     }
   }
 }

@@ -4,6 +4,16 @@ import { TeamIncomingWebhookConfig } from '../types/team-incoming.js';
 
 dotenv.config();
 
+/**
+ * Claude Code substitutes `${user_config.KEY}` into a plugin's MCP env vars. An
+ * optional key the user left blank can arrive as the unexpanded literal, so treat
+ * anything still wearing the placeholder syntax as unset.
+ */
+function readEnv(key: string): string | undefined {
+  const value = process.env[key];
+  return !value || value.startsWith('${') ? undefined : value;
+}
+
 export class ConfigService {
   private static tokens: Map<string, IncomingWebhookConfig> = new Map();
   private static teamTokens: Map<string, TeamIncomingWebhookConfig> = new Map();
@@ -11,7 +21,7 @@ export class ConfigService {
 
   public static initialize(): void {
     // Load default incoming token
-    const defaultToken = process.env.JANDI_TOKEN;
+    const defaultToken = readEnv('JANDI_TOKEN');
     if (defaultToken) {
       this.addToken('default', defaultToken);
     }
@@ -20,7 +30,7 @@ export class ConfigService {
     Object.keys(process.env).forEach(key => {
       if (key.startsWith('JANDI_TOKEN_') && key !== 'JANDI_TOKEN') {
         const alias = key.replace('JANDI_TOKEN_', '').toLowerCase();
-        const token = process.env[key];
+        const token = readEnv(key);
         if (token) {
           this.addToken(alias, token);
         }
@@ -31,7 +41,7 @@ export class ConfigService {
     Object.keys(process.env).forEach(key => {
       if (key.startsWith('JANDI_URL_')) {
         const alias = key.replace('JANDI_URL_', '').toLowerCase();
-        const url = process.env[key];
+        const url = readEnv(key);
         if (url && this.tokens.has(alias)) {
           const config = this.tokens.get(alias)!;
           config.url = url;
@@ -51,11 +61,11 @@ export class ConfigService {
     });
 
     teamAliases.forEach(alias => {
-      const teamId = process.env[`JANDI_TEAM_ID_${alias.toUpperCase()}`];
-      const token = process.env[`JANDI_TEAM_TOKEN_${alias.toUpperCase()}`];
+      const teamId = readEnv(`JANDI_TEAM_ID_${alias.toUpperCase()}`);
+      const token = readEnv(`JANDI_TEAM_TOKEN_${alias.toUpperCase()}`);
       if (teamId && token) {
         const config: TeamIncomingWebhookConfig = { teamId, token, alias };
-        const customUrl = process.env[`JANDI_TEAM_URL_${alias.toUpperCase()}`];
+        const customUrl = readEnv(`JANDI_TEAM_URL_${alias.toUpperCase()}`);
         if (customUrl) {
           config.url = customUrl;
         }
@@ -67,7 +77,7 @@ export class ConfigService {
     Object.keys(process.env).forEach(key => {
       if (key.startsWith('JANDI_OUTGOING_TOKEN_')) {
         const alias = key.replace('JANDI_OUTGOING_TOKEN_', '').toLowerCase();
-        const token = process.env[key];
+        const token = readEnv(key);
         if (token) {
           this.outgoingTokens.set(alias, token);
         }
@@ -78,15 +88,18 @@ export class ConfigService {
   // --- Incoming Token Management ---
 
   public static addToken(alias: string, token: string, url?: string): void {
-    this.tokens.set(alias, {
+    const key = alias.toLowerCase();
+    this.tokens.set(key, {
       token,
       url,
-      alias
+      alias: key
     });
   }
 
+  // Aliases are stored lower-cased because env var names are upper-case by convention,
+  // so every lookup normalizes too — `tokenAlias: "DEV"` and `"dev"` are the same token.
   public static getToken(alias: string): IncomingWebhookConfig | null {
-    return this.tokens.get(alias) || null;
+    return this.tokens.get(alias.toLowerCase()) || null;
   }
 
   public static getAllTokens(): Map<string, IncomingWebhookConfig> {
@@ -94,11 +107,11 @@ export class ConfigService {
   }
 
   public static hasToken(alias: string): boolean {
-    return this.tokens.has(alias);
+    return this.tokens.has(alias.toLowerCase());
   }
 
   public static removeToken(alias: string): boolean {
-    return this.tokens.delete(alias);
+    return this.tokens.delete(alias.toLowerCase());
   }
 
   public static getTokenByValue(tokenValue: string): IncomingWebhookConfig | null {
@@ -110,9 +123,13 @@ export class ConfigService {
     return null;
   }
 
+  /**
+   * Jandi does not publish a token format, and real webhook addresses appear both
+   * as a single token and as `{teamId}/{token}`. So accept anything usable as a URL
+   * path segment and reject only what would break the request.
+   */
   public static validateTokenFormat(token: string): boolean {
-    const tokenRegex = /^[a-f0-9]{32}$/i;
-    return tokenRegex.test(token);
+    return /^[A-Za-z0-9_\-/]+$/.test(token);
   }
 
   public static listTokenAliases(): string[] {
@@ -122,11 +139,11 @@ export class ConfigService {
   // --- Team Incoming Token Management ---
 
   public static getTeamToken(alias: string): TeamIncomingWebhookConfig | null {
-    return this.teamTokens.get(alias) || null;
+    return this.teamTokens.get(alias.toLowerCase()) || null;
   }
 
   public static hasTeamToken(alias: string): boolean {
-    return this.teamTokens.has(alias);
+    return this.teamTokens.has(alias.toLowerCase());
   }
 
   public static listTeamTokenAliases(): string[] {
@@ -140,11 +157,11 @@ export class ConfigService {
   // --- Outgoing Token Management ---
 
   public static getOutgoingToken(alias: string): string | null {
-    return this.outgoingTokens.get(alias) || null;
+    return this.outgoingTokens.get(alias.toLowerCase()) || null;
   }
 
   public static hasOutgoingToken(alias: string): boolean {
-    return this.outgoingTokens.has(alias);
+    return this.outgoingTokens.has(alias.toLowerCase());
   }
 
   public static listOutgoingTokenAliases(): string[] {

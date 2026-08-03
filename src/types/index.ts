@@ -6,6 +6,7 @@ export {
   BaseWebhookConfig,
   WebhookType,
   JandiColors,
+  JandiErrorCodes,
   MessageType,
   ScriptTemplate,
   ToolResult,
@@ -31,8 +32,3 @@ export {
   TeamOutgoingWebhookPayload,
   OutgoingWebhookResponse,
 } from './outgoing.js';
-
-// Backward compatibility aliases
-export type { IncomingWebhookConfig as JandiWebhookConfig } from './incoming.js';
-export type { IncomingMessage as JandiMessage } from './incoming.js';
-export type { IncomingResponse as JandiResponse } from './incoming.js';

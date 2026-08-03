@@ -10,12 +10,27 @@ export interface BaseJandiMessage {
   connectInfo?: JandiConnectInfo[];
 }
 
+/**
+ * Error codes returned by the Jandi Connect webhook API, verified against the live
+ * endpoint in 2026-07. Jandi's public docs list the HTTP statuses but not the codes.
+ */
+export const JandiErrorCodes = {
+  /** A request parameter failed validation — e.g. a non-numeric team id. */
+  INVALID_VALUE: 40000,
+  /** The webhook token is wrong, or the webhook is disabled or deleted. */
+  INVALID_TOKEN: 40051,
+  /** Rate limit exceeded (HTTP 429). */
+  RATE_LIMITED: 42900,
+} as const;
+
 export interface BaseJandiResponse {
   success: boolean;
   message?: string;
   error?: string;
   errorCode?: number;
   rateLimited?: boolean;
+  /** Request field Jandi rejected, when it names one (e.g. `teamId`). */
+  field?: string;
 }
 
 export interface BaseWebhookConfig {

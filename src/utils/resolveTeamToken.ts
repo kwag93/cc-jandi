@@ -30,8 +30,16 @@ export function resolveTeamToken(input: TeamTokenInput): ResolveResult {
     return { success: true, config };
   }
 
+  // Plugin installs supply the team credentials under the `default` alias, so fall
+  // back to it the way incoming resolution does. Without this, a user who filled in
+  // the plugin's team fields would still have to pass tokenAlias: "default" by hand.
+  const config = ConfigService.getTeamToken('default');
+  if (config) {
+    return { success: true, config };
+  }
+
   return {
     success: false,
-    error: "Please provide teamId+token or a tokenAlias for team webhook. Set JANDI_TEAM_ID_{alias} and JANDI_TEAM_TOKEN_{alias} environment variables"
+    error: "No team webhook configured. Provide teamId+token, or a tokenAlias, or set JANDI_TEAM_ID_{alias} and JANDI_TEAM_TOKEN_{alias}. Note that Team Incoming Webhook is a paid-team feature and Tosslab issues the credentials."
   };
 }

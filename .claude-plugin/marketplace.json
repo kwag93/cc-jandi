@@ -1,0 +1,29 @@
+{
+  "$schema": "https://json.schemastore.org/claude-code-marketplace.json",
+  "name": "kwag93-jandi",
+  "owner": {
+    "name": "kwag93"
+  },
+  "description": "잔디(JANDI) 협업툴 연동을 위한 Claude Code 플러그인",
+  "plugins": [
+    {
+      "name": "cc-jandi",
+      "source": "./",
+      "description": "잔디 웹훅으로 채널·개인 알림을 보내고, 아웃고잉 웹훅 핸들러와 연동 스크립트를 생성합니다",
+      "author": {
+        "name": "kwag93"
+      },
+      "homepage": "https://github.com/kwag93/cc-jandi",
+      "category": "productivity",
+      "tags": [
+        "jandi",
+        "webhook",
+        "notification",
+        "korean",
+        "collaboration",
+        "mcp",
+        "messaging"
+      ]
+    }
+  ]
+}

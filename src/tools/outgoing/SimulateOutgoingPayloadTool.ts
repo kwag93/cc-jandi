@@ -51,9 +51,14 @@ class SimulateOutgoingPayloadTool extends MCPTool<SimulateOutgoingPayloadInput> 
       const webhookType = input.webhookType || 'outgoing';
       const now = new Date().toISOString();
 
+      const keyword = input.keyword || "test";
+      // Jandi sends `text` with the trigger keyword included and `data` with it stripped.
+      const text = input.text;
+      const data = this.stripKeyword(text, keyword);
+
       if (webhookType === 'team-outgoing') {
         const payload = {
-          token: "abcdef0123456789abcdef0123456789",
+          token: "YE1ronbbuoZkq7h3J5KMI4Tn",
           teamName: input.teamName || "TestTeam",
           roomName: input.roomName || "TestRoom",
           writer: {
@@ -62,10 +67,10 @@ class SimulateOutgoingPayloadTool extends MCPTool<SimulateOutgoingPayloadInput> 
             email: input.writerEmail || "test@example.com",
             phoneNumber: "+82-10-1234-5678"
           },
-          text: input.text,
-          keyword: input.keyword || "test",
+          text,
+          keyword,
           createdAt: now,
-          data: {},
+          data,
           platform: "web",
           ip: "127.0.0.1"
         };
@@ -83,15 +88,15 @@ class SimulateOutgoingPayloadTool extends MCPTool<SimulateOutgoingPayloadInput> 
       }
 
       const payload = {
-        token: "abcdef0123456789abcdef0123456789",
+        token: "YE1ronbbuoZkq7h3J5KMI4Tn",
         teamName: input.teamName || "TestTeam",
         roomName: input.roomName || "TestRoom",
         writerName: input.writerName || "TestUser",
         writerEmail: input.writerEmail || "test@example.com",
-        text: input.text,
-        keyword: input.keyword || "test",
+        text,
+        keyword,
         createdAt: now,
-        data: {},
+        data,
         platform: "web",
         ip: "127.0.0.1"
       };
@@ -109,6 +114,19 @@ class SimulateOutgoingPayloadTool extends MCPTool<SimulateOutgoingPayloadInput> 
     } catch (error) {
       return { success: false, error: `Error generating payload: ${error}` };
     }
+  }
+
+  private stripKeyword(text: string, keyword: string): string {
+    const trimmed = text.trimStart();
+    for (const prefix of [`/${keyword}`, keyword]) {
+      // Require a word boundary so keyword "test" does not turn "testing 123"
+      // into "ing 123" — Jandi triggers on the leading token, not a substring.
+      const rest = trimmed.slice(prefix.length);
+      if (trimmed.startsWith(prefix) && (rest === '' || /^\s/.test(rest))) {
+        return rest.trimStart();
+      }
+    }
+    return trimmed;
   }
 
   private generateCurlCommand(payload: Record<string, unknown>): string {
