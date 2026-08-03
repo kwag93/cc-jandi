@@ -1,6 +1,6 @@
 {
   "name": "cc-jandi",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "잔디(Jandi) 팀 협업 도구용 MCP 서버 & Claude Code 플러그인 - 웹훅 메시지 전송, 알림 자동화, 스크립트 생성",
   "type": "module",
   "author": "kwag93",
